@@ -155,11 +155,11 @@ def esat(temp, phase=0, P=1000):
     y = (temp - 273.15)/(temp - 32.18)
     es = 6.1121 * np.exp( 17.502 * y )
     
-    if (P > 800):
-      es = 1.004 * es
-    else:
-      es = 1.0034 * es
-    return(es)
+    #if (P > 800):
+    #  es = 1.004 * es
+    #else:
+    #  es = 1.0034 * es
+    return(es*1.004)
 
 def diffusivity(temp, P=1000):
     Pcrit_air = 36.4
@@ -221,7 +221,7 @@ def tglobe(temp, dewp, RH, wind_speed, srad, fdb, cza, P=1000, a=0.56):
     Tsfc = temp
     tglobe_prev = dewp + 273.15
     converged = False
-    max_iter = 25
+    max_iter = 10
     convergence = 0.02
     i = 0
     while i <= max_iter:

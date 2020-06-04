@@ -11,6 +11,7 @@ import equations
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+from netCDF4 import Dataset
 
 #%% Setup
 #%%% Logging
@@ -274,19 +275,23 @@ est_speed_shd_NDFD = equations.est_wind_speed(wind_mix, stabt_shd_NDFD)
 
 #%% Natural Wet Bulb Temp
 #%%% Radiative Heating Switch
+log.info("Radiative Heating")
 rad_RTMA = np.where(nght_RTMA == 0, 1, 0)
 rad_mix = np.where(nght_mix == 0, 1, 0)
 
 #%%% Calculate Wet Bulb Temperature
+log.info("Calculate Wet Bulb Temperature for RTMA Dataset")
 twb_sun_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
 twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
 twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
 
+log.info("Calculate Wet Bulb Temperature for NDFD Dataset")
 twb_sun_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
 twb_shade_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
 twb_actual_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
 
 #%%% Calculate Wet Globe Temperature
+log.info("Calculate Wet Globe Temperature")
 tglobe_sun_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, zenith_RTMA*np.pi/180)
 tglobe_shade_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180)
 tglobe_actual_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180)
@@ -297,3 +302,23 @@ tglobe_actual_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_act_
 
 #%% Wet Bulb Globe Temperature
 #%%% Calculate Wet Bulb Globe Temperature
+log.info("Combine Wet Bulb and Wet Globe Temperature")
+WBGT_sun_RTMA = 0.7*twb_sun_RTMA + 0.2*tglobe_sun_RTMA + 0.1*temp_RTMA
+WBGT_shade_RTMA = 0.7*twb_shade_RTMA + 0.2*tglobe_shade_RTMA + 0.1*temp_RTMA
+WBGT_actual_RTMA = 0.7*twb_actual_RTMA + 0.2*tglobe_actual_RTMA + 0.1*temp_RTMA
+
+WBGT_sun_NDFD = 0.7*twb_sun_NDFD + 0.2*tglobe_sun_NDFD + 0.1*temp_mix
+WBGT_shade_NDFD = 0.7*twb_shade_NDFD + 0.2*tglobe_shade_NDFD + 0.1*temp_mix
+WBGT_actual_NDFD = 0.7*twb_actual_NDFD + 0.2*tglobe_actual_NDFD + 0.1*temp_mix
+
+log.info("Combine RTMA and NDFD Datasets")
+WBGT_sun = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), axis=2)
+WBGT_shade = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), axis=2)
+WBGT_actual = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), axis=2)
+
+#%%% Export Wet Bulb Globe Temperature
+log.info("Export NetCDF Version 4")
+rootgrp = Dataset("test.nc", "w", format="NETCDF4")
+time = rootgrp.createDimension("time_dim", None)
+lat = rootgrp.createDimension("lat_dim", None)
+lon = rootgrp.createDimension("lon_dim", None)
