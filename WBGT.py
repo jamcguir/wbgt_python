@@ -5,6 +5,7 @@
 """
 
 #%% Imports
+import logging
 import utilities
 import equations
 import numpy as np
@@ -12,15 +13,21 @@ import pandas as pd
 import geopandas as gpd
 
 #%% Setup
+#%%% Logging
+log = logging.getLogger(__name__)
+log_format = "%(levelname)-7.7s - %(message)-60s\t - [%(lineno)d] %(module)s.%(funcName)s"
+logging.basicConfig(level=logging.INFO, format=log_format)
+
+#%%% Development
 TESTMODE = True
-LOGGING = True
-
-Z = 6
-STATELIST = ["North Carolina", "Virginia"]
-
 np.warnings.filterwarnings('ignore')
 
-#%%% Longitude and Latitude Data
+#%%% Constants
+Z = 6
+statelist = ["North Carolina", "Virginia"]
+
+#%%% Longitude and Latitude 
+log.info("Longitude and Latitude")
 with open("resources/lonlat.csv") as read_file:
     lonlat = pd.read_csv(read_file)
 
@@ -46,7 +53,7 @@ gdf = gpd.GeoDataFrame(lonlat,
                        geometry=gpd.points_from_xy(lonlat.lon-360, lonlat.lat))
 
 #%%% Region Masking
-statelist = STATELIST
+log.info("Region Masking")
 statemasks, statelabels, states = utilities.to_state(gdf, statelist=statelist)
 
 dimmasks = [None]*len(statemasks)
@@ -58,6 +65,7 @@ for row in range(0, len(statemasks)):
     combined_mask = np.logical_or(combined_mask, dimmasks[row])
 
 #%%% Mask Application
+log.info("Mask Application")
 # Apply masks to longitude and latitude arrays
 lon_array_masked = np.where(combined_mask, lon_array, np.nan)
 lat_array_masked = np.where(combined_mask, lat_array, np.nan)
@@ -74,6 +82,7 @@ lat_mask_NDFD2 = np.repeat(lat_array_masked, 120, axis=2)
     
 #%% Solar Calculations
 #%%% Time
+log.info("Timing")
 jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_NDFD2, hour_NDFD2 = utilities.timing(z=Z)
 jday_RTMA_mask = np.where(combined_mask, jday_RTMA, np.nan)
 jday_NDFD_mask = np.where(combined_mask, jday_NDFD, np.nan)
@@ -90,6 +99,7 @@ zenith_RTMA, zenith_NDFD, zenith_NDFD2 = equations.solar_calc(lat_mask_RTMA,
 
 
 #%% Data Imports
+log.info("Data Loading")
 if not TESTMODE:
     vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import("resources/WBGT_RTMA.nc")
     vars_NDFD2, data_NDFD2, unit_NDFD2, fill_NDFD2 = utilities.NDFD2_import("resources/WBGT_NDFD.nc")
@@ -102,9 +112,11 @@ elif TESTMODE:
 vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_NCVA.nc")
 
 #%%% RTMA Bias Correction
+log.info("RTMA Bias Correction")
 data_RTMA = utilities.RTMA_bias(data_RTMA, z=Z)
 
 #%%% Wind Speed Correction
+log.info("Wind Speed Correction")
 data_RTMA["WIND_P0_L103_GLC0"] = np.where(data_RTMA["WIND_P0_L103_GLC0"] < 0.5, 
                                           0.5, data_RTMA["WIND_P0_L103_GLC0"])
 data_NDFD2["WIND_P0_L103_GLC0"] = np.where(data_NDFD2["WIND_P0_L103_GLC0"] < 0.5, 
@@ -113,6 +125,7 @@ data_NBM["WIND_P0_L103_GLC0"] = np.where(data_NBM["WIND_P0_L103_GLC0"] < 0.5,
                                          0.5, data_NBM["WIND_P0_L103_GLC0"])
 
 #%%% Name Variables
+log.info("Variable Refactoring")
 temp_RTMA = data_RTMA["TMP_P0_L103_GLC0"]
 dewp_RTMA = data_RTMA["DPT_P0_L103_GLC0"]
 wind_RTMA = data_RTMA["WIND_P0_L103_GLC0"]
@@ -133,12 +146,14 @@ elev = np.atleast_3d(data_elev["var"])
 elev = np.swapaxes(elev, 0, 1)
 
 #%%% Combine NDFD and NBM
+log.info("Combine NDFD and NBM datasets")
 temp_mix = np.concatenate((temp_NDFD2, temp_NBM), axis=2)
 dewp_mix = np.concatenate((dewp_NDFD2, dewp_NBM), axis=2)
 wind_mix = np.concatenate((wind_NDFD2, wind_NBM), axis=2)
 cldc_mix = np.concatenate((cldc_NDFD2, cldc_NBM), axis=2)
 
 #%%% Mask Arrays
+log.info("Mask Imported Arrays")
 temp_RTMA = np.where(combined_mask, temp_RTMA, np.nan)
 dewp_RTMA = np.where(combined_mask, dewp_RTMA, np.nan)
 wind_RTMA = np.where(combined_mask, wind_RTMA, np.nan)
@@ -152,6 +167,7 @@ cldc_mix = np.where(combined_mask, cldc_mix, np.nan)
 elev_mix = np.where(combined_mask, elev, np.nan)
 
 #%%% Unit Conversion
+log.info("Convert Temperature Units")
 t_conv = 273.15
 
 temp_RTMA -= t_conv
@@ -163,11 +179,13 @@ dewp_mix -= t_conv
 cldc_mix = cldc_mix/100.0
 
 #%% Solar Intensity
-#%%% Calculate RH
+#%%% Calculate Relative Humidity
+log.info("Calculate Relative Humidity")
 rh_RTMA = equations.rh_calc(temp_RTMA, dewp_RTMA)
 rh_mix = equations.rh_calc(temp_mix, dewp_mix)
 
 #%%% Solar Radiation
+log.info("Calculate Solar Radiation")
 nght_RTMA = np.where((hour_RTMA <= 10) & (hour_RTMA >= 0), 0, 1)
 nght_mix = np.where((hour_NDFD <= 10) & (hour_NDFD >= 0), 0, 1)
 
@@ -192,6 +210,7 @@ shd_NDFD = sr_NDFD*(1-0.75*(1**3.4))
 act_NDFD = sr_NDFD*(1-0.75*(np.power(cldc_mix, 3.4)))
 
 #%%% Morning Shade
+log.info("Calculate Morning Shade")
 mshd_RTMA = np.where((hour_RTMA >= 10) & (hour_RTMA <= 14), True, False)
 mshd_mix = np.where((hour_NDFD >= 10) & (hour_NDFD <= 14), True, False)
 
@@ -202,6 +221,7 @@ sun_NDFD = np.where(mshd_mix, shd_NDFD, sun_NDFD)
 act_NDFD = np.where(mshd_mix, shd_NDFD, act_NDFD)
 
 #%%% Theoretical Maximum Solar Radiation
+log.info("Calculate Maximum Solar Radiation")
 smax_RTMA = equations.solar_max(jday_RTMA_mask, zenith_RTMA)
 smax_NDFD = equations.solar_max(jday_NDFD_mask, zenith_NDFD)
 
@@ -222,6 +242,7 @@ starshd_NDFD = shd_NDFD/smax_NDFD
 staract_NDFD = act_NDFD/smax_NDFD
 
 #%%% Diffuse and Direct Solar Radiation
+log.info("Calculate Diffuse and Direct Solar Radiation")
 fdb_sun_RTMA, fdif_sun_RTMA = equations.direct_diffuse(zenith_RTMA, starsun_RTMA)
 fdb_shd_RTMA, fdif_shd_RTMA = equations.direct_diffuse(zenith_RTMA, starshd_RTMA)
 fdb_act_RTMA, fdif_act_RTMA = equations.direct_diffuse(zenith_RTMA, staract_RTMA)
@@ -232,6 +253,7 @@ fdb_act_NDFD, fdif_act_NDFD = equations.direct_diffuse(zenith_NDFD, staract_NDFD
 
 #%% Wind Speed   
 #%%% Estimate Stability Class
+log.info("Estimate Wind Stability Class")
 stabt_sun_RTMA = equations.stability(nght_RTMA, wind_RTMA, sun_RTMA)
 stabt_act_RTMA = equations.stability(nght_RTMA, wind_RTMA, act_RTMA)
 stabt_shd_RTMA = equations.stability(nght_RTMA, wind_RTMA, shd_RTMA)
@@ -241,6 +263,37 @@ stabt_act_NDFD = equations.stability(nght_mix, wind_mix, act_NDFD)
 stabt_shd_NDFD = equations.stability(nght_mix, wind_mix, shd_NDFD)
 
 #%%% Estimate Wind Speed
+log.info("Estimate Wind Speed")
 est_speed_sun_RTMA = equations.est_wind_speed(wind_RTMA, stabt_sun_RTMA)
 est_speed_act_RTMA = equations.est_wind_speed(wind_RTMA, stabt_act_RTMA)
 est_speed_shd_RTMA = equations.est_wind_speed(wind_RTMA, stabt_shd_RTMA)
+
+est_speed_sun_NDFD = equations.est_wind_speed(wind_mix, stabt_sun_NDFD)
+est_speed_act_NDFD = equations.est_wind_speed(wind_mix, stabt_act_NDFD)
+est_speed_shd_NDFD = equations.est_wind_speed(wind_mix, stabt_shd_NDFD)
+
+#%% Natural Wet Bulb Temp
+#%%% Radiative Heating Switch
+rad_RTMA = np.where(nght_RTMA == 0, 1, 0)
+rad_mix = np.where(nght_mix == 0, 1, 0)
+
+#%%% Calculate Wet Bulb Temperature
+twb_sun_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
+twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
+twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
+
+twb_sun_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
+twb_shade_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
+twb_actual_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
+
+#%%% Calculate Wet Globe Temperature
+tglobe_sun_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, zenith_RTMA*np.pi/180)
+tglobe_shade_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180)
+tglobe_actual_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180)
+
+tglobe_sun_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, zenith_NDFD*np.pi/180)
+tglobe_shade_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, zenith_NDFD*np.pi/180)
+tglobe_actual_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, zenith_NDFD*np.pi/180)
+
+#%% Wet Bulb Globe Temperature
+#%%% Calculate Wet Bulb Globe Temperature

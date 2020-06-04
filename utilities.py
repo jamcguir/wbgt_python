@@ -12,6 +12,8 @@ from shapely.geometry.polygon import Polygon
 
 import time
 import datetime 
+import logging
+log = logging.getLogger(__name__)
 
 from netCDF4 import Dataset
 
@@ -21,6 +23,7 @@ def to_state(gdf, statelist=["North Carolina"]):
     """Returns an array of two-letter state abbreviations given arrays of 
     latitude and longitude."""
     
+    log.debug("Processing {}".format(statelist))
     usa = gpd.read_file("resources/states/states.shp")
     states = usa.loc[usa["STATE_NAME"].isin(statelist)]
     points = gdf["geometry"]
@@ -32,9 +35,11 @@ def to_state(gdf, statelist=["North Carolina"]):
         state_polygon = state["geometry"]
         statemasks[row] = points.within(state_polygon)
         statelabels[row] = state["STATE_ABBR"]
+        log.debug("Finished processing {}".format(statelabels[row]))
     return statemasks, statelabels, states
 
 def timing(z=6):
+    log.debug("Processing timing for z={}".format(z))
     today_dt = datetime.datetime.utcnow()
     today_d = today_dt.date()
     
