@@ -1,2 +1,2 @@
-# wbgt_python
-WBGT Python implementation
+# WBGT (Python)
+An implementation of the Wet-bulb Globe Temperature tool in Python.
