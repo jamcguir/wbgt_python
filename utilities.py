@@ -108,7 +108,8 @@ def RTMA_import(filename):
     for v in vs:
         vars_d[v] = rootgrp[v]
         data_d[v] = np.squeeze(rootgrp[v][:])
-        #data_d[v] = np.swapaxes(data_d[v], 0, 2)
+        if(data_d[v].ndim == 3):
+          data_d[v] = np.swapaxes(data_d[v], 0, 2)
         data_d[v].fill_value = np.nan
         unit_d[v] = rootgrp[v].getncattr("units")
         if '_FillValue' in rootgrp[v].ncattrs():
@@ -128,7 +129,8 @@ def NDFD2_import(filename):
         vars_d[v] = rootgrp[v]
         data_d[v] = np.squeeze(rootgrp[v][:])
         #data_d[v] = rootgrp[v][:]
-        #data_d[v] = np.swapaxes(data_d[v], 0, 2)
+        if(data_d[v].ndim == 3):
+          data_d[v] = np.swapaxes(data_d[v], 0, 2)
         data_d[v].fill_value = np.nan
         #data_d[v] = data_d[v][:,:,:46] 
         #data_d[v] = data_d[v][:46,:,:] #No swap axes, so t,y,x
@@ -150,7 +152,8 @@ def small_import(filename):
     for v in vs:
         vars_d[v] = rootgrp[v]
         data_d[v] = rootgrp[v][:]
-        #data_d[v] = np.swapaxes(data_d[v], 0, 2)
+        if(data_d[v].ndim == 3):
+          data_d[v] = np.swapaxes(data_d[v], 0, 2)
     return vars_d, data_d
 
 #%%% Bias Functions
