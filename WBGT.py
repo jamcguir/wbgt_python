@@ -99,6 +99,20 @@ zenith_RTMA, zenith_NDFD, zenith_NDFD2 = equations.solar_calc(lat_mask_RTMA,
                                                               jday_NDFD2_mask, 
                                                               hour_NDFD2)
 
+# Restrict data to 2 times
+log.info("Restricting items for two times FOR TESTING")
+jday_RTMA = jday_RTMA[:,:,:2]
+jday_RTMA_mask = jday_RTMA_mask[:,:,:2]
+hour_RTMA = hour_RTMA[:,:,:2]
+zenith_RTMA = zenith_RTMA[:,:,:2]
+jday_NDFD = jday_NDFD[:,:,:2]
+jday_NDFD_mask = jday_NDFD_mask[:,:,:2]
+hour_NDFD = hour_NDFD[:,:,:2]
+zenith_NDFD = zenith_NDFD[:,:,:2]
+jday_NDFD2 = jday_NDFD2[:,:,:2]
+jday_NDFD2_mask = jday_NDFD2_mask[:,:,:2]
+hour_NDFD2 = hour_NDFD2[:,:,:2]
+zenith_NDFD2 = zenith_NDFD2[:,:,:2]
 
 #%% Data Imports
 log.info("Data Loading")
@@ -126,6 +140,7 @@ elif TESTMODE:
 vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_NCVA.nc")
 
 ##%%% RTMA Bias Correction
+log.info("Skipping RTMA Bias Correction since it doesn't work")
 #log.info("RTMA Bias Correction")
 #data_RTMA = utilities.RTMA_bias(data_RTMA, z=Z)
 ##data_RTMA = utilities.RTMA_grib_bias(data_RTMA, z=Z)
@@ -150,13 +165,11 @@ wind_RTMA = data_RTMA["WIND_10maboveground"]
 cldc_RTMA = data_RTMA["TCDC_entireatmosphere_consideredasasinglelayer_"]
 
 temp_NDFD2 = data_NDFD2["TMP_2maboveground"]
-print("NDFD TEMP",temp_NDFD2)
 dewp_NDFD2 = data_NDFD2["DPT_2maboveground"]
 wind_NDFD2 = data_NDFD2["WIND_10maboveground"]
 cldc_NDFD2 = data_NDFD2["TCDC_surface"]
 
 temp_NBM = data_NBM["TMP_2maboveground"]
-print("NBM TEMP",temp_NBM)
 dewp_NBM = data_NBM["DPT_2maboveground"]
 wind_NBM = data_NBM["WIND_10maboveground"]
 cldc_NBM = data_NBM["TCDC_surface"]
@@ -165,12 +178,18 @@ cldc_NBM = data_NBM["TCDC_surface"]
 elev = np.atleast_3d(data_elev["var"])
 elev = np.swapaxes(elev, 0, 1)
 
-#%%% Combine NDFD and NBM
-log.info("Combine NDFD and NBM datasets")
-temp_mix = np.concatenate((temp_NDFD2, temp_NBM), axis=0)
-dewp_mix = np.concatenate((dewp_NDFD2, dewp_NBM), axis=0)
-wind_mix = np.concatenate((wind_NDFD2, wind_NBM), axis=0)
-cldc_mix = np.concatenate((cldc_NDFD2, cldc_NBM), axis=0)
+##%%% Combine NDFD and NBM
+#log.info("Combine NDFD and NBM datasets")
+#temp_mix = np.concatenate((temp_NDFD2, temp_NBM), axis=2)
+#dewp_mix = np.concatenate((dewp_NDFD2, dewp_NBM), axis=2)
+#wind_mix = np.concatenate((wind_NDFD2, wind_NBM), axis=2)
+#cldc_mix = np.concatenate((cldc_NDFD2, cldc_NBM), axis=2)
+## DON'T COMBINE FOR NOW
+log.info("DO NOTCombine NDFD and NBM datasets. Using NBM instead")
+temp_mix =  temp_NBM
+dewp_mix =  dewp_NBM
+wind_mix =  wind_NBM
+cldc_mix =  cldc_NBM
 
 #%%% Mask Arrays
 log.info("Mask Imported Arrays")
@@ -301,6 +320,7 @@ rad_mix = np.where(nght_mix == 0, 1, 0)
 #%%% Calculate Wet Bulb Temperature
 log.info("Calculate Wet Bulb Temperature for RTMA Dataset")
 twb_sun_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
+#print(twb_sun_RTMA)
 twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
 twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
 
@@ -337,7 +357,18 @@ WBGT_actual = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), a
 
 #%%% Export Wet Bulb Globe Temperature
 log.info("Export NetCDF Version 4")
-rootgrp = Dataset("test.nc", "w", format="NETCDF4")
-time = rootgrp.createDimension("time_dim", None)
-lat = rootgrp.createDimension("lat_dim", None)
-lon = rootgrp.createDimension("lon_dim", None)
+outfile = Dataset("test.nc", "w", format="NETCDF4")
+time = outfile.createDimension("time", None)
+lat = outfile.createDimension("lat", None)
+lon = outfile.createDimension("lon", None)
+
+# Add the WBGT_SUN
+WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('time','lat','lon'),zlib=True)
+WBGT_sun_var[:,:,:] = WBGT_sun[:,:,:]
+# Add the WBGT_SHADE
+WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('time','lat','lon'),zlib=True)
+WBGT_shade_var[:,:,:] = WBGT_shade[:,:,:]
+# Add the WBGT_ACTUAL
+WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('time','lat','lon'),zlib=True)
+WBGT_actual_var[:,:,:] = WBGT_actual[:,:,:]
+
