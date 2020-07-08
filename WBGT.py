@@ -20,7 +20,8 @@ log_format = "%(levelname)-7.7s - %(message)-60s\t - [%(lineno)d] %(module)s.%(f
 logging.basicConfig(level=logging.INFO, format=log_format)
 
 #%%% Development
-TESTMODE = True
+#TESTMODE = True
+TESTMODE = False
 np.warnings.filterwarnings('ignore')
 
 #%%% Constants
@@ -102,45 +103,63 @@ zenith_RTMA, zenith_NDFD, zenith_NDFD2 = equations.solar_calc(lat_mask_RTMA,
 #%% Data Imports
 log.info("Data Loading")
 if not TESTMODE:
-    vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import("resources/WBGT_RTMA.nc")
-    vars_NDFD2, data_NDFD2, unit_NDFD2, fill_NDFD2 = utilities.NDFD2_import("resources/WBGT_NDFD.nc")
-    vars_NBM, data_NBM = utilities.small_import("resources/WBGT_NBM.nc4")
+    #v1
+    #vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import("resources/WBGT_RTMA.nc")
+    #vars_NDFD2, data_NDFD2, unit_NDFD2, fill_NDFD2 = utilities.NDFD2_import("resources/WBGT_NDFD.nc")
+    #vars_NBM, data_NBM = utilities.small_import("resources/WBGT_NBM.nc4")
+    #v2 - Convert to NC4 before
+    log.info("Loading Real Data")
+    vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import("resources/rtma.nc")
+    vars_NDFD2, data_NDFD2, unit_NDFD2, fill_NDFD2 = utilities.NDFD2_import("resources/ndfd.nc")
+    #vars_NBM, data_NBM = utilities.small_import("resources/nbm.nc")
+    vars_NBM, data_NBM,unit_NBM,fill_NBM = utilities.NDFD2_import("resources/nbm.nc")
+    #v3 - Native dataset format
+    #vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import_grib("resources/rtma_combo.grb2")
+    #print(data_RTMA)
+
 elif TESTMODE:
+    log.info("Loading Test Data")
     data_RTMA = utilities.data_gen("RTMA")
     data_NDFD2 = utilities.data_gen("NDFD2")
     data_NBM = utilities.data_gen("NBM")
 
 vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_NCVA.nc")
 
-#%%% RTMA Bias Correction
-log.info("RTMA Bias Correction")
-data_RTMA = utilities.RTMA_bias(data_RTMA, z=Z)
+##%%% RTMA Bias Correction
+#log.info("RTMA Bias Correction")
+#data_RTMA = utilities.RTMA_bias(data_RTMA, z=Z)
+##data_RTMA = utilities.RTMA_grib_bias(data_RTMA, z=Z)
 
 #%%% Wind Speed Correction
 log.info("Wind Speed Correction")
-data_RTMA["WIND_P0_L103_GLC0"] = np.where(data_RTMA["WIND_P0_L103_GLC0"] < 0.5, 
-                                          0.5, data_RTMA["WIND_P0_L103_GLC0"])
-data_NDFD2["WIND_P0_L103_GLC0"] = np.where(data_NDFD2["WIND_P0_L103_GLC0"] < 0.5, 
-                                           0.5, data_NDFD2["WIND_P0_L103_GLC0"])
-data_NBM["WIND_P0_L103_GLC0"] = np.where(data_NBM["WIND_P0_L103_GLC0"] < 0.5, 
-                                         0.5, data_NBM["WIND_P0_L103_GLC0"])
+data_RTMA["WIND_10maboveground"] = np.where(data_RTMA["WIND_10maboveground"] < 0.5, 
+                                          0.5, data_RTMA["WIND_10maboveground"])
+data_NDFD2["WIND_10maboveground"] = np.where(data_NDFD2["WIND_10maboveground"] < 0.5, 
+                                           0.5, data_NDFD2["WIND_10maboveground"])
+#data_NDFD2["WIND_10maboveground"] = np.where(data_NDFD2["WIND_10maboveground"] < 0.5, 
+#                                           0.5, data_NDFD2["WIND_10maboveground"])
+data_NBM["WIND_10maboveground"] = np.where(data_NBM["WIND_10maboveground"] < 0.5, 
+                                         0.5, data_NBM["WIND_10maboveground"])
 
 #%%% Name Variables
 log.info("Variable Refactoring")
-temp_RTMA = data_RTMA["TMP_P0_L103_GLC0"]
-dewp_RTMA = data_RTMA["DPT_P0_L103_GLC0"]
-wind_RTMA = data_RTMA["WIND_P0_L103_GLC0"]
-cldc_RTMA = data_RTMA["TCDC_P0_L200_GLC0"]
+temp_RTMA = data_RTMA["TMP_2maboveground"]
+dewp_RTMA = data_RTMA["DPT_2maboveground"]
+wind_RTMA = data_RTMA["WIND_10maboveground"]
+#cldc_RTMA = data_RTMA["TCDC_surface"]
+cldc_RTMA = data_RTMA["TCDC_entireatmosphere_consideredasasinglelayer_"]
 
-temp_NDFD2 = data_NDFD2["TMP_P0_L103_GLC0"]
-dewp_NDFD2 = data_NDFD2["DPT_P0_L103_GLC0"]
-wind_NDFD2 = data_NDFD2["WIND_P0_L103_GLC0"]
-cldc_NDFD2 = data_NDFD2["TCDC_P0_L1_GLC0"]
+temp_NDFD2 = data_NDFD2["TMP_2maboveground"]
+print("NDFD TEMP",temp_NDFD2)
+dewp_NDFD2 = data_NDFD2["DPT_2maboveground"]
+wind_NDFD2 = data_NDFD2["WIND_10maboveground"]
+cldc_NDFD2 = data_NDFD2["TCDC_surface"]
 
-temp_NBM = data_NBM["TMP_P0_L103_GLC0"]
-dewp_NBM = data_NBM["DPT_P0_L103_GLC0"]
-wind_NBM = data_NBM["WIND_P0_L103_GLC0"]
-cldc_NBM = data_NBM["TCDC_P0_L1_GLC0"]
+temp_NBM = data_NBM["TMP_2maboveground"]
+print("NBM TEMP",temp_NBM)
+dewp_NBM = data_NBM["DPT_2maboveground"]
+wind_NBM = data_NBM["WIND_10maboveground"]
+cldc_NBM = data_NBM["TCDC_surface"]
 
 # Increase the speed here
 elev = np.atleast_3d(data_elev["var"])
@@ -148,10 +167,10 @@ elev = np.swapaxes(elev, 0, 1)
 
 #%%% Combine NDFD and NBM
 log.info("Combine NDFD and NBM datasets")
-temp_mix = np.concatenate((temp_NDFD2, temp_NBM), axis=2)
-dewp_mix = np.concatenate((dewp_NDFD2, dewp_NBM), axis=2)
-wind_mix = np.concatenate((wind_NDFD2, wind_NBM), axis=2)
-cldc_mix = np.concatenate((cldc_NDFD2, cldc_NBM), axis=2)
+temp_mix = np.concatenate((temp_NDFD2, temp_NBM), axis=0)
+dewp_mix = np.concatenate((dewp_NDFD2, dewp_NBM), axis=0)
+wind_mix = np.concatenate((wind_NDFD2, wind_NBM), axis=0)
+cldc_mix = np.concatenate((cldc_NDFD2, cldc_NBM), axis=0)
 
 #%%% Mask Arrays
 log.info("Mask Imported Arrays")

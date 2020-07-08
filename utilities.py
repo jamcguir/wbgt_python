@@ -108,10 +108,13 @@ def RTMA_import(filename):
     for v in vs:
         vars_d[v] = rootgrp[v]
         data_d[v] = np.squeeze(rootgrp[v][:])
-        data_d[v] = np.swapaxes(data_d[v], 0, 2)
+        #data_d[v] = np.swapaxes(data_d[v], 0, 2)
         data_d[v].fill_value = np.nan
         unit_d[v] = rootgrp[v].getncattr("units")
-        fill_d[v] = rootgrp[v].getncattr("_FillValue")
+        if '_FillValue' in rootgrp[v].ncattrs():
+          fill_d[v] = rootgrp[v].getncattr("_FillValue")
+        else:
+          fill_d[v] = np.nan
     return vars_d, data_d, unit_d, fill_d 
 
 def NDFD2_import(filename):
@@ -124,11 +127,19 @@ def NDFD2_import(filename):
     for v in vs:
         vars_d[v] = rootgrp[v]
         data_d[v] = np.squeeze(rootgrp[v][:])
-        data_d[v] = np.swapaxes(data_d[v], 0, 2)
+        #data_d[v] = rootgrp[v][:]
+        #data_d[v] = np.swapaxes(data_d[v], 0, 2)
         data_d[v].fill_value = np.nan
-        data_d[v] = data_d[v][:,:,:46]
-        unit_d[v] = rootgrp[v].getncattr("units")
-        fill_d[v] = rootgrp[v].getncattr("_FillValue")
+        #data_d[v] = data_d[v][:,:,:46] 
+        #data_d[v] = data_d[v][:46,:,:] #No swap axes, so t,y,x
+        if '_FillValue' in rootgrp[v].ncattrs():
+          fill_d[v] = rootgrp[v].getncattr("_FillValue")
+        else:
+          fill_d[v] = np.nan
+        if 'units' in rootgrp[v].ncattrs():
+          fill_d[v] = rootgrp[v].getncattr("units")
+        else:
+          unit_d[v] = np.nan
     return vars_d, data_d, unit_d, fill_d 
 
 def small_import(filename):
@@ -139,6 +150,7 @@ def small_import(filename):
     for v in vs:
         vars_d[v] = rootgrp[v]
         data_d[v] = rootgrp[v][:]
+        #data_d[v] = np.swapaxes(data_d[v], 0, 2)
     return vars_d, data_d
 
 #%%% Bias Functions
@@ -160,9 +172,9 @@ def RTMA_bias(data_RTMA, z):
             "srad_bias": np.array([0,0,0,0.13,21.51,90.23,82.56,35.49,-24.2,-87.89,-160.95,-229.6,-272.25,-287.4,-271.61,-221.73,-154.68,-68.81,-1.86,0.08,0,0,0,0,0])
             }
     for i in range(0, 25):  
-        data_RTMA["TMP_P0_L103_GLC0"][:, :, i] = data_RTMA["TMP_P0_L103_GLC0"][:, :, i] + bias_table["temp_bias"][i]
-        data_RTMA["DPT_P0_L103_GLC0"][:, :, i] = data_RTMA["DPT_P0_L103_GLC0"][:, :, i] + bias_table["dew_bias"][i]
-        data_RTMA["WIND_P0_L103_GLC0"][:, :, i] = data_RTMA["WIND_P0_L103_GLC0"][:, :, i] + bias_table["wind_bias"][i]
+        data_RTMA["TMP_2maboveground"][:, :, i] = data_RTMA["TMP_2maboveground"][:, :, i] + bias_table["temp_bias"][i]
+        data_RTMA["DPT_2maboveground"][:, :, i] = data_RTMA["DPT_2maboveground"][:, :, i] + bias_table["dew_bias"][i]
+        data_RTMA["WIND_10maboveground"][:, :, i] = data_RTMA["WIND_10maboveground"][:, :, i] + bias_table["wind_bias"][i]
     return data_RTMA
 
 def NDFD_bias(data_NDFD, z):
@@ -174,9 +186,9 @@ def NDFD_bias(data_NDFD, z):
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-103.1,-78.9,-34.1,22.9,76.8,133,182.1,189.5,179.9,139.5,91.5,29.5])
         }
     for i in range(0, 25):  
-        data_NDFD["TMP_P0_L103_GLC0"][:, :, i] = data_NDFD["TMP_P0_L103_GLC0"][:, :, i] + bias_table["temp_bias"][i]
-        data_NDFD["DPT_P0_L103_GLC0"][:, :, i] = data_NDFD["DPT_P0_L103_GLC0"][:, :, i] + bias_table["dew_bias"][i]
-        data_NDFD["WIND_P0_L103_GLC0"][:, :, i] = data_NDFD["WIND_P0_L103_GLC0"][:, :, i] + bias_table["wind_bias"][i]
+        data_NDFD["TMP_2maboveground"][:, :, i] = data_NDFD["TMP_2maboveground"][:, :, i] + bias_table["temp_bias"][i]
+        data_NDFD["DPT_2maboveground"][:, :, i] = data_NDFD["DPT_2maboveground"][:, :, i] + bias_table["dew_bias"][i]
+        data_NDFD["WIND_10maboveground"][:, :, i] = data_NDFD["WIND_10maboveground"][:, :, i] + bias_table["wind_bias"][i]
     return data_NDFD
 
 def NBM_bias(data_NBM, z):
@@ -188,9 +200,9 @@ def NBM_bias(data_NBM, z):
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-101.7,-74.1,-23.1,39.7,99,155.5,197.2,208,193.6,150.5,95.8,30.5])
         }
     for i in range(0, 25):  
-        data_NBM["TMP_P0_L103_GLC0"][:, :, i] = data_NBM["TMP_P0_L103_GLC0"][:, :, i] + bias_table["temp_bias"][i]
-        data_NBM["DPT_P0_L103_GLC0"][:, :, i] = data_NBM["DPT_P0_L103_GLC0"][:, :, i] + bias_table["dew_bias"][i]
-        data_NBM["WIND_P0_L103_GLC0"][:, :, i] = data_NBM["WIND_P0_L103_GLC0"][:, :, i] + bias_table["wind_bias"][i]
+        data_NBM["TMP_2maboveground"][:, :, i] = data_NBM["TMP_2maboveground"][:, :, i] + bias_table["temp_bias"][i]
+        data_NBM["DPT_2maboveground"][:, :, i] = data_NBM["DPT_2maboveground"][:, :, i] + bias_table["dew_bias"][i]
+        data_NBM["WIND_10maboveground"][:, :, i] = data_NBM["WIND_10maboveground"][:, :, i] + bias_table["wind_bias"][i]
     return data_NBM
 
 def srad_bias(data_srad, z=12, dataset="srad_bias_RTMA"):
@@ -211,10 +223,10 @@ def srad_bias(data_srad, z=12, dataset="srad_bias_RTMA"):
 #%%% Testing
 def data_gen(datatype):
     if datatype == "RTMA":
-        keys = ["TMP_P0_L103_GLC0",
-                "DPT_P0_L103_GLC0",
-                "WIND_P0_L103_GLC0",
-                "TCDC_P0_L200_GLC0"]
+        keys = ["TMP_2maboveground",
+                "DPT_2maboveground",
+                "WIND_10maboveground",
+                "TCDC_entireatmosphere_consideredasasinglelayer_"]
         data_out = dict.fromkeys(keys)
         
         data_shape = (420, 370, 25)
@@ -223,9 +235,9 @@ def data_gen(datatype):
             data_out[key] = data_inside
             
     elif datatype == "NDFD2":
-        keys = ["TMP_P0_L103_GLC0",
-                "DPT_P0_L103_GLC0",
-                "WIND_P0_L103_GLC0",
+        keys = ["TMP_2maboveground",
+                "DPT_2maboveground",
+                "WIND_10maboveground",
                 "TCDC_P0_L1_GLC0"]
         data_out = dict.fromkeys(keys)
         
@@ -235,9 +247,9 @@ def data_gen(datatype):
             data_out[key] = data_inside
             
     elif datatype == "NBM": 
-        keys = ["TMP_P0_L103_GLC0",
-                "DPT_P0_L103_GLC0",
-                "WIND_P0_L103_GLC0",
+        keys = ["TMP_2maboveground",
+                "DPT_2maboveground",
+                "WIND_10maboveground",
                 "TCDC_P0_L1_GLC0"]
         data_out = dict.fromkeys(keys)
         
