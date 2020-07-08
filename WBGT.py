@@ -320,7 +320,7 @@ rad_mix = np.where(nght_mix == 0, 1, 0)
 #%%% Calculate Wet Bulb Temperature
 log.info("Calculate Wet Bulb Temperature for RTMA Dataset")
 twb_sun_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
-#print(twb_sun_RTMA)
+print(twb_sun_RTMA)
 twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
 twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
 
@@ -364,11 +364,21 @@ lon = outfile.createDimension("lon", None)
 
 # Add the WBGT_SUN
 WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('time','lat','lon'),zlib=True)
-WBGT_sun_var[:,:,:] = WBGT_sun[:,:,:]
+WBGT_sun_var.setncatts({'long_name': u"Sun WBGT",\
+                    'units': u"degF", 'level_desc': u'Surface',\
+                    'var_desc': u"Sun WBGT"})
+WBGT_sun_var[:] = WBGT_sun
+#outfile.variables['wbgt_sun'][:] = WBGT_sun
 # Add the WBGT_SHADE
 WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('time','lat','lon'),zlib=True)
-WBGT_shade_var[:,:,:] = WBGT_shade[:,:,:]
+WBGT_shade_var.setncatts({'long_name': u"Shade WBGT",\
+                    'units': u"degF", 'level_desc': u'Surface',\
+                    'var_desc': u"Shade WBGT"})
+WBGT_shade_var[:] = WBGT_shade[:]
 # Add the WBGT_ACTUAL
 WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('time','lat','lon'),zlib=True)
-WBGT_actual_var[:,:,:] = WBGT_actual[:,:,:]
-
+WBGT_shade_var.setncatts({'long_name': u"Actual WBGT",\
+                    'units': u"degF", 'level_desc': u'Surface',\
+                    'var_desc': u"Actual WBGT"})
+WBGT_actual_var[:] = WBGT_actual[:]
+outfile.close()
