@@ -319,34 +319,41 @@ rad_mix = np.where(nght_mix == 0, 1, 0)
 
 #%%% Calculate Wet Bulb Temperature
 log.info("Calculate Wet Bulb Temperature for RTMA Dataset")
-twb_sun_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
-print(twb_sun_RTMA)
-twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
-twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180, sr_RTMA)
+twb_sun_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
+print(twb_sun_RTMA[100,180:250,0])
+twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
+twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 
 log.info("Calculate Wet Bulb Temperature for NDFD Dataset")
-twb_sun_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
-twb_shade_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
-twb_actual_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, zenith_NDFD*np.pi/180, sr_NDFD)
+twb_sun_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
+print(twb_sun_NDFD[100,180:250,0])
+twb_shade_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
+twb_actual_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 
 #%%% Calculate Wet Globe Temperature
-log.info("Calculate Wet Globe Temperature")
-tglobe_sun_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, zenith_RTMA*np.pi/180)
+log.info("Calculate Wet Globe Temperature for RTMA Dataset")
+tglobe_sun_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, np.cos(zenith_RTMA*np.pi/180))
+print(tglobe_sun_RTMA[100,180:250,0])
 tglobe_shade_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180)
 tglobe_actual_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180)
 
+log.info("Calculate Wet Globe Temperature for NDFD Dataset")
 tglobe_sun_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, zenith_NDFD*np.pi/180)
+print(tglobe_sun_NDFD[100,180:250,0])
 tglobe_shade_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, zenith_NDFD*np.pi/180)
 tglobe_actual_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, zenith_NDFD*np.pi/180)
 
 #%% Wet Bulb Globe Temperature
 #%%% Calculate Wet Bulb Globe Temperature
-log.info("Combine Wet Bulb and Wet Globe Temperature")
+log.info("Combine Wet Bulb and Wet Globe Temperature for RTMA Dataset")
 WBGT_sun_RTMA = 0.7*twb_sun_RTMA + 0.2*tglobe_sun_RTMA + 0.1*temp_RTMA
+print(WBGT_sun_RTMA[100,180:250,0])
 WBGT_shade_RTMA = 0.7*twb_shade_RTMA + 0.2*tglobe_shade_RTMA + 0.1*temp_RTMA
 WBGT_actual_RTMA = 0.7*twb_actual_RTMA + 0.2*tglobe_actual_RTMA + 0.1*temp_RTMA
 
+log.info("Combine Wet Bulb and Wet Globe Temperature for NDFD Dataset")
 WBGT_sun_NDFD = 0.7*twb_sun_NDFD + 0.2*tglobe_sun_NDFD + 0.1*temp_mix
+print(WBGT_sun_NDFD[100,180:250,0])
 WBGT_shade_NDFD = 0.7*twb_shade_NDFD + 0.2*tglobe_shade_NDFD + 0.1*temp_mix
 WBGT_actual_NDFD = 0.7*twb_actual_NDFD + 0.2*tglobe_actual_NDFD + 0.1*temp_mix
 
@@ -357,28 +364,44 @@ WBGT_actual = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), a
 
 #%%% Export Wet Bulb Globe Temperature
 log.info("Export NetCDF Version 4")
-outfile = Dataset("test.nc", "w", format="NETCDF4")
-time = outfile.createDimension("time", None)
-lat = outfile.createDimension("lat", None)
-lon = outfile.createDimension("lon", None)
+outfile = Dataset("out_wbgt.nc", "w", format="NETCDF4")
+lon = outfile.createDimension("lat", 420)
+lat = outfile.createDimension("lon", 370)
+time = outfile.createDimension("time", 4)
+
+# create latitude axis
+out_lat = outfile.createVariable('lat_grid', 'f8', ('lat', 'lon'),zlib=True)
+out_lat.setncatts({'standard_name': u"latitude",\
+                    'long_name': u"latitude",\
+                    'units':u"degrees_north"})
+out_lat[:,:]=lat_RTMA[:,:,0]
+
+# create longitude axis
+out_lon = outfile.createVariable('lon_grid', 'f8', ('lat', 'lon'),zlib=True)
+out_lon.setncatts({'standard_name': u"longitude",\
+                    'long_name': u"longitude",\
+                    'units':u"degrees_east"})
+out_lon[:,:]=lon_RTMA[:,:,0]-360
 
 # Add the WBGT_SUN
-WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('time','lat','lon'),zlib=True)
+WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('lat','lon','time'),zlib=True)
 WBGT_sun_var.setncatts({'long_name': u"Sun WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
                     'var_desc': u"Sun WBGT"})
-WBGT_sun_var[:] = WBGT_sun
+WBGT_sun_var[:,:,:] = WBGT_sun[:,:,:]
 #outfile.variables['wbgt_sun'][:] = WBGT_sun
+
 # Add the WBGT_SHADE
-WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('time','lat','lon'),zlib=True)
+WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('lat','lon','time'),zlib=True)
 WBGT_shade_var.setncatts({'long_name': u"Shade WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
                     'var_desc': u"Shade WBGT"})
-WBGT_shade_var[:] = WBGT_shade[:]
+WBGT_shade_var[:,:,:] = WBGT_shade[:,:,:]
+
 # Add the WBGT_ACTUAL
-WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('time','lat','lon'),zlib=True)
-WBGT_shade_var.setncatts({'long_name': u"Actual WBGT",\
+WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('lat','lon','time'),zlib=True)
+WBGT_actual_var.setncatts({'long_name': u"Actual WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
                     'var_desc': u"Actual WBGT"})
-WBGT_actual_var[:] = WBGT_actual[:]
+WBGT_actual_var[:,:,:] = WBGT_actual[:,:,:]
 outfile.close()

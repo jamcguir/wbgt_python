@@ -185,6 +185,8 @@ def emis_atm(temp, RH):
     return (0.575 * (e**0.143))
 
 def twb(temp, dewp, RH, wind_speed, srad, fdb, cza, rad, P=1000, a=0.56):
+    temp=temp+273.15
+    RH=RH/100.
     Tsfc = temp
     sza = np.arccos(cza)
     eair = RH * esat(temp)
@@ -218,6 +220,8 @@ def h_sphere_in_air(temp, wind_speed, P=1000):
     return(Nu * thermal_conductivity(temp) / globe_diameter)
 
 def tglobe(temp, dewp, RH, wind_speed, srad, fdb, cza, P=1000, a=0.56):
+    temp=temp+273.15
+    RH=RH/100.
     Tsfc = temp
     tglobe_prev = dewp + 273.15
     converged = False
