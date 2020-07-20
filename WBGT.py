@@ -123,12 +123,12 @@ if not TESTMODE:
     #vars_NBM, data_NBM = utilities.small_import("resources/WBGT_NBM.nc4")
     #v2 - Convert to NC4 before
     log.info("Loading Real Data")
-    vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import("resources/rtma.nc")
-    vars_NDFD2, data_NDFD2, unit_NDFD2, fill_NDFD2 = utilities.NDFD2_import("resources/ndfd.nc")
-    #vars_NBM, data_NBM = utilities.small_import("resources/nbm.nc")
-    vars_NBM, data_NBM,unit_NBM,fill_NBM = utilities.NDFD2_import("resources/nbm.nc")
+    vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import("input/rtma.nc")
+    vars_NDFD2, data_NDFD2, unit_NDFD2, fill_NDFD2 = utilities.NDFD2_import("input/ndfd.nc")
+    #vars_NBM, data_NBM = utilities.small_import("input/nbm.nc")
+    vars_NBM, data_NBM,unit_NBM,fill_NBM = utilities.NDFD2_import("input/nbm.nc")
     #v3 - Native dataset format
-    #vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import_grib("resources/rtma_combo.grb2")
+    #vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import_grib("input/rtma_combo.grb2")
     #print(data_RTMA)
 
 elif TESTMODE:
@@ -364,44 +364,86 @@ WBGT_actual = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), a
 
 #%%% Export Wet Bulb Globe Temperature
 log.info("Export NetCDF Version 4")
-outfile = Dataset("out_wbgt.nc", "w", format="NETCDF4")
+outfile = Dataset("out_wbgt.nc4", "w", format="NETCDF4")
+
+#outfile.title = 'Wet Bulb Globe Temperature (WBGT) forecast using RTMA, NDFD, and NBM. Written for SERCC by NC SCO'
+outfile.institution = "Southeast Regional Climate Center"
+outfile.source = "TBD"
+outfile.Conventions = 'CF-1.5'
+outfile.references = "TBD"
+
+# Create the dimensions
 lon = outfile.createDimension("lat", 420)
 lat = outfile.createDimension("lon", 370)
-time = outfile.createDimension("time", 4)
+time = outfile.createDimension("time", None)
+
+### create time axis
+out_time = outfile.createVariable('time', 'f8', ('time'),zlib=True)
+out_time.setncatts({
+                    'standard_name': u"time",\
+                    'long_name': u"time",\
+                    'units':u"Minutes Since 2929-06-20 00:00:00",\
+                    'coordinates':u'time',\
+                    'calendar':u'gregorian',\
+})
+out_time[:]=['0','1']
 
 # create latitude axis
-out_lat = outfile.createVariable('lat_grid', 'f8', ('lat', 'lon'),zlib=True)
-out_lat.setncatts({'standard_name': u"latitude",\
+out_lat = outfile.createVariable('latitude', 'f8', ('lat','lon'),zlib=True)
+out_lat.setncatts({
+                    'standard_name': u"latitude",\
                     'long_name': u"latitude",\
-                    'units':u"degrees_north"})
+                    'units':u"degrees_north",\
+                    '_CoordinateAxisType':u"Lat",\
+#                    'coordinates':u'latitude',\
+})
 out_lat[:,:]=lat_RTMA[:,:,0]
 
 # create longitude axis
-out_lon = outfile.createVariable('lon_grid', 'f8', ('lat', 'lon'),zlib=True)
-out_lon.setncatts({'standard_name': u"longitude",\
+out_lon = outfile.createVariable('longitude', 'f8', ('lat','lon'),zlib=True)
+out_lon.setncatts({
+                    'standard_name': u"longitude",\
                     'long_name': u"longitude",\
-                    'units':u"degrees_east"})
+                    'units':u"degrees_east",\
+                    '_CoordinateAxisType':u"Lon",\
+#                    'coordinates':u'longitude',\
+})
 out_lon[:,:]=lon_RTMA[:,:,0]-360
 
 # Add the WBGT_SUN
 WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('lat','lon','time'),zlib=True)
-WBGT_sun_var.setncatts({'long_name': u"Sun WBGT",\
+WBGT_sun_var.setncatts({
+                    'long_name': u"Sun WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
-                    'var_desc': u"Sun WBGT"})
+                    'var_desc': u"Sun WBGT",\
+                    'coordinates':u'latitude longitude',\
+                    'level_desc':u"Surface",\
+                    'min': 0,\
+})
 WBGT_sun_var[:,:,:] = WBGT_sun[:,:,:]
 #outfile.variables['wbgt_sun'][:] = WBGT_sun
 
 # Add the WBGT_SHADE
 WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('lat','lon','time'),zlib=True)
-WBGT_shade_var.setncatts({'long_name': u"Shade WBGT",\
+WBGT_shade_var.setncatts({
+                    'long_name': u"Shade WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
-                    'var_desc': u"Shade WBGT"})
+                    'var_desc': u"Shade WBGT",\
+                    'coordinates':u'latitude longitude',\
+                    'level_desc':u"Surface",\
+                    'min': 0,\
+})
 WBGT_shade_var[:,:,:] = WBGT_shade[:,:,:]
 
 # Add the WBGT_ACTUAL
 WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('lat','lon','time'),zlib=True)
-WBGT_actual_var.setncatts({'long_name': u"Actual WBGT",\
+WBGT_actual_var.setncatts({
+                    'long_name': u"Actual WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
-                    'var_desc': u"Actual WBGT"})
+                    'var_desc': u"Actual WBGT",\
+                    'coordinates':u'latitude longitude',\
+                    'level_desc':u"Surface",\
+                    'min': 0,\
+})
 WBGT_actual_var[:,:,:] = WBGT_actual[:,:,:]
 outfile.close()
