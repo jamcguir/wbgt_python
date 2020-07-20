@@ -158,17 +158,24 @@ data_NBM["WIND_10maboveground"] = np.where(data_NBM["WIND_10maboveground"] < 0.5
 
 #%%% Name Variables
 log.info("Variable Refactoring")
+lat_RTMA = data_RTMA["latitude"]
+lon_RTMA = data_RTMA["longitude"]
+print(lat_RTMA)
 temp_RTMA = data_RTMA["TMP_2maboveground"]
 dewp_RTMA = data_RTMA["DPT_2maboveground"]
 wind_RTMA = data_RTMA["WIND_10maboveground"]
 #cldc_RTMA = data_RTMA["TCDC_surface"]
 cldc_RTMA = data_RTMA["TCDC_entireatmosphere_consideredasasinglelayer_"]
 
+lat_NDFD2 = data_NDFD2["latitude"]
+lon_NDFD2 = data_NDFD2["longitude"]
 temp_NDFD2 = data_NDFD2["TMP_2maboveground"]
 dewp_NDFD2 = data_NDFD2["DPT_2maboveground"]
 wind_NDFD2 = data_NDFD2["WIND_10maboveground"]
 cldc_NDFD2 = data_NDFD2["TCDC_surface"]
 
+lat_NBM = data_NBM["latitude"]
+lon_NBM = data_NBM["longitude"]
 temp_NBM = data_NBM["TMP_2maboveground"]
 dewp_NBM = data_NBM["DPT_2maboveground"]
 wind_NBM = data_NBM["WIND_10maboveground"]
@@ -373,12 +380,15 @@ outfile.Conventions = 'CF-1.5'
 outfile.references = "TBD"
 
 # Create the dimensions
-lon = outfile.createDimension("lat", 420)
-lat = outfile.createDimension("lon", 370)
-time = outfile.createDimension("time", None)
+#lon = outfile.createDimension("lat", 420)
+#lat = outfile.createDimension("lon", 370)
+#time = outfile.createDimension("time", None)
+y = outfile.createDimension("y", 370)
+x = outfile.createDimension("x", 420)
+t = outfile.createDimension("t", None)
 
 ### create time axis
-out_time = outfile.createVariable('time', 'f8', ('time'),zlib=True)
+out_time = outfile.createVariable('time', 'f8', ('t'),zlib=True)
 out_time.setncatts({
                     'standard_name': u"time",\
                     'long_name': u"time",\
@@ -389,7 +399,7 @@ out_time.setncatts({
 out_time[:]=['0','1']
 
 # create latitude axis
-out_lat = outfile.createVariable('latitude', 'f8', ('lat','lon'),zlib=True)
+out_lat = outfile.createVariable('latitude', 'f8', ('y','x'),zlib=True)
 out_lat.setncatts({
                     'standard_name': u"latitude",\
                     'long_name': u"latitude",\
@@ -397,10 +407,10 @@ out_lat.setncatts({
                     '_CoordinateAxisType':u"Lat",\
 #                    'coordinates':u'latitude',\
 })
-out_lat[:,:]=lat_RTMA[:,:,0]
+out_lat[:,:]=lat_RTMA[:,:]
 
 # create longitude axis
-out_lon = outfile.createVariable('longitude', 'f8', ('lat','lon'),zlib=True)
+out_lon = outfile.createVariable('longitude', 'f8', ('y','x'),zlib=True)
 out_lon.setncatts({
                     'standard_name': u"longitude",\
                     'long_name': u"longitude",\
@@ -408,10 +418,10 @@ out_lon.setncatts({
                     '_CoordinateAxisType':u"Lon",\
 #                    'coordinates':u'longitude',\
 })
-out_lon[:,:]=lon_RTMA[:,:,0]-360
+out_lon[:,:]=lon_RTMA[:,:]-360
 
 # Add the WBGT_SUN
-WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('lat','lon','time'),zlib=True)
+WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('y','x','t'),zlib=True)
 WBGT_sun_var.setncatts({
                     'long_name': u"Sun WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
@@ -424,7 +434,8 @@ WBGT_sun_var[:,:,:] = WBGT_sun[:,:,:]
 #outfile.variables['wbgt_sun'][:] = WBGT_sun
 
 # Add the WBGT_SHADE
-WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('lat','lon','time'),zlib=True)
+#WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('lat','lon','time'),zlib=True)
+WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('y','x','t'),zlib=True)
 WBGT_shade_var.setncatts({
                     'long_name': u"Shade WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
@@ -436,7 +447,7 @@ WBGT_shade_var.setncatts({
 WBGT_shade_var[:,:,:] = WBGT_shade[:,:,:]
 
 # Add the WBGT_ACTUAL
-WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('lat','lon','time'),zlib=True)
+WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('y','x','t'),zlib=True)
 WBGT_actual_var.setncatts({
                     'long_name': u"Actual WBGT",\
                     'units': u"degF", 'level_desc': u'Surface',\
