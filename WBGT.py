@@ -33,12 +33,16 @@ log.info("Longitude and Latitude")
 with open("resources/lonlat.csv") as read_file:
     lonlat = pd.read_csv(read_file)
 
+nx,ny,nt = utilities.RTMA_import_dims("input/rtma.nc")
+#print(nx,ny,nt)
+#quit()
+
 # Set up arrays for both longitude and latitude
 lon = lonlat.lon.to_numpy()
-lon_array = lon.reshape(1,370,420)
+lon_array = lon.reshape(1,ny,nx)
 
 lat = lonlat.lat.to_numpy()
-lat_array = lat.reshape(1,370,420)
+lat_array = lat.reshape(1,ny,nx)
 
 # Create "stacked" arrays spanning across time scales
 lon_RTMA = np.repeat(lon_array, 25, axis=0)
@@ -59,16 +63,16 @@ log.info("Region Masking")
 statemasks, statelabels, states = utilities.to_state(gdf, statelist=statelist)
 
 dimmasks = [None]*len(statemasks)
-combined_mask = np.full((1,370,420), False)
+combined_mask = np.full((1,ny,nx), False)
 for row in range(0, len(statemasks)):
     statemask = statemasks[row]
     mask = statemask.to_numpy()
-    dimmasks[row] = mask.reshape(1,370,420)
+    dimmasks[row] = mask.reshape(1,ny,nx)
     combined_mask = np.logical_or(combined_mask, dimmasks[row])
 
 
 log.info("DO NOT Mask Application")
-combined_mask = np.full((1,370,420), True)
+combined_mask = np.full((1,ny,nx), True)
 
 #%%% Mask Application
 log.info("Mask Application")
@@ -90,7 +94,7 @@ lat_mask_NDFD2 = np.repeat(lat_array_masked, 120, axis=0)
 #%% Solar Calculations
 #%%% Time
 log.info("Timing")
-jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_NDFD2, hour_NDFD2 = utilities.timing(z=Z)
+jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_NDFD2, hour_NDFD2 = utilities.timing(z=Z,nx=nx,ny=ny,nt=nt)
 jday_RTMA_mask = np.where(combined_mask, jday_RTMA, np.nan)
 jday_NDFD_mask = np.where(combined_mask, jday_NDFD, np.nan)
 jday_NDFD2_mask = np.where(combined_mask, jday_NDFD2, np.nan)
@@ -390,11 +394,11 @@ outfile.Conventions = 'CF-1.5'
 outfile.references = "TBD"
 
 # Create the dimensions
-#lon = outfile.createDimension("lat", 420)
-#lat = outfile.createDimension("lon", 370)
+#lon = outfile.createDimension("lat", nx)
+#lat = outfile.createDimension("lon", ny)
 #time = outfile.createDimension("time", None)
-y = outfile.createDimension("y", 370)
-x = outfile.createDimension("x", 420)
+y = outfile.createDimension("y", ny)
+x = outfile.createDimension("x", nx)
 t = outfile.createDimension("t", None)
 
 ### create time axis

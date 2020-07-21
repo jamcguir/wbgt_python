@@ -38,7 +38,7 @@ def to_state(gdf, statelist=["North Carolina"]):
         log.debug("Finished processing {}".format(statelabels[row]))
     return statemasks, statelabels, states
 
-def timing(z=6):
+def timing(z=6,nx=370,ny=420,nt=1):
     log.debug("Processing timing for z={}".format(z))
     today_dt = datetime.datetime.utcnow()
     today_d = today_dt.date()
@@ -100,6 +100,14 @@ def timing(z=6):
                                 hour_NDFD2[38::3,:,:]),
                                axis=0)
     return jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_NDFD2, hour_NDFD2
+
+#%%% Dimension Imports. Written by JAM Jul 2020
+def RTMA_import_dims(filename):
+    infile = Dataset(filename, "a", format="NETCDF4")
+    nx = infile.dimensions['x'].size
+    ny = infile.dimensions['y'].size
+    nt = infile.dimensions['time'].size
+    return nx, ny, nt
 
 #%%% Data Imports
 def RTMA_import(filename):
