@@ -107,7 +107,8 @@ def RTMA_import_dims(filename):
     nx = infile.dimensions['x'].size
     ny = infile.dimensions['y'].size
     nt = infile.dimensions['time'].size
-    return nx, ny, nt
+    vtime = infile['time'].getncattr("reference_date")
+    return nx, ny, nt, vtime
 
 #%%% Data Imports
 def RTMA_import(filename):
@@ -184,15 +185,17 @@ def RTMA_bias(data_RTMA, z):
         bias_table = {
             "hour": np.array(list(range(6,23)) + list(range(0,6))),
             "temp_bias": np.array([-0.67,-0.6,-0.57,-0.49,-0.2,1.14,1.86,1.74,1.26,0.74,0.28,-0.15,-0.5,-0.71,-0.81,-0.91,-1.11,-1.51,-1.99,-1.44,-1.07,-0.9,-0.79,-0.7,-0.67]) / 1.8,   #nums displayed are temp differences in F -> change to temp diff in K
-            "dew_bias": np.array([-1.71,-1.68,-1.68,-1.67,-1.5,-0.93,-1.3,-1.85,-2.18,-2.35,-2.4,-2.4,-2.3,-2.19,-2.13,-1.96,-1.79,-1.56,-1.78,-1.76,-1.77,-1.72,-1.68,-1.69,-1.71]) / 1.8,
+            "dew_bias": np.array([-1.71,-1.68,-1.68,-1.67,-1.5,-0.93,-1.3,-1.85,-2.18,-2.35,-2.4,-2.4,-2.3,-2.19,-2.13,-1.96,-1.79,-1.56,-1.78,-1.76,-1.77,-1.72,-1.68,-1.69,-1.71]) / 1.8, #nums displayed are temp DeltaF, change to DeltaC/DeltaK
             "wind_bias": np.array([0.12,0.14,0.14,0.15,0.2,0.26,0.26,0.27,0.27,0.23,0.22,0.25,0.21,0.17,0.09,0.07,-0.01,-0.15,-0.02,0.09,0.1,0.11,0.1,0.12,0.12]),
             "srad_bias": np.array([0,0,0,0.13,21.51,90.23,82.56,35.49,-24.2,-87.89,-160.95,-229.6,-272.25,-287.4,-271.61,-221.73,-154.68,-68.81,-1.86,0.08,0,0,0,0,0])
             }
     ntime = data_RTMA["TMP_2maboveground"].shape[0]
+    print(data_RTMA["TMP_2maboveground"][0,100,100])
     for i in range(0, ntime):  
         data_RTMA["TMP_2maboveground"][i,:,:] = data_RTMA["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
         data_RTMA["DPT_2maboveground"][i,:,:] = data_RTMA["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
         data_RTMA["WIND_10maboveground"][i,:,:] = data_RTMA["WIND_10maboveground"][i,:,:] + bias_table["wind_bias"][i]
+    print(data_RTMA["TMP_2maboveground"][0,100,100])
     return data_RTMA
 
 def NDFD_bias(data_NDFD, z):
@@ -204,10 +207,12 @@ def NDFD_bias(data_NDFD, z):
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-103.1,-78.9,-34.1,22.9,76.8,133,182.1,189.5,179.9,139.5,91.5,29.5])
         }
     ntime = data_NDFD["TMP_2maboveground"].shape[0]
+    print(data_NDFD["TMP_2maboveground"][0,100,100])
     for i in range(0, ntime):  
         data_NDFD["TMP_2maboveground"][i,:,:] = data_NDFD["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
         data_NDFD["DPT_2maboveground"][i,:,:] = data_NDFD["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
         data_NDFD["WIND_10maboveground"][i,:,:] = data_NDFD["WIND_10maboveground"][i,:,:] + bias_table["wind_bias"][i]
+    print(data_NDFD["TMP_2maboveground"][0,100,100])
     return data_NDFD
 
 def NBM_bias(data_NBM, z):

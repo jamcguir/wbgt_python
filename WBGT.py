@@ -1,7 +1,7 @@
  #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: Gray Martin
+@author: Gray Martin, July 2020 updates by John McGuire
 """
 
 #%% Imports
@@ -27,13 +27,12 @@ np.warnings.filterwarnings('ignore')
 #%%% Constants
 Z = 6
 statelist = ["North Carolina", "Virginia"]
+nx,ny,nt,vtime = utilities.RTMA_import_dims("input/rtma.nc")
 
 #%%% Longitude and Latitude 
 log.info("Longitude and Latitude")
 with open("resources/lonlat.csv") as read_file:
     lonlat = pd.read_csv(read_file)
-
-nx,ny,nt = utilities.RTMA_import_dims("input/rtma.nc")
 #print(nx,ny,nt)
 #quit()
 
@@ -146,13 +145,16 @@ elif TESTMODE:
     data_NDFD2 = utilities.data_gen("NDFD2")
     data_NBM = utilities.data_gen("NBM")
 
+# get the elevation data
 vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_NCVA.nc")
 
 ##%%% RTMA Bias Correction
-log.info("Skipping RTMA Bias Correction since it doesn't work")
-#log.info("RTMA Bias Correction")
-#data_RTMA = utilities.RTMA_bias(data_RTMA, z=Z)
-##data_RTMA = utilities.RTMA_grib_bias(data_RTMA, z=Z)
+log.info("SERCC's RTMA Bias Correction")
+data_RTMA = utilities.RTMA_bias(data_RTMA, z=Z)
+log.info("SERCC's NDFD Bias Correction")
+data_NDFD2 = utilities.RTMA_bias(data_NDFD2, z=Z)
+log.info("SERCC's NBM Bias Correction")
+data_NBM = utilities.RTMA_bias(data_NBM, z=Z)
 
 #%%% Wind Speed Correction
 log.info("Wind Speed Correction")
@@ -169,7 +171,6 @@ data_NBM["WIND_10maboveground"] = np.where(data_NBM["WIND_10maboveground"] < 0.5
 log.info("Variable Refactoring")
 lat_RTMA = data_RTMA["latitude"]
 lon_RTMA = data_RTMA["longitude"]
-print(lat_RTMA)
 temp_RTMA = data_RTMA["TMP_2maboveground"]
 dewp_RTMA = data_RTMA["DPT_2maboveground"]
 wind_RTMA = data_RTMA["WIND_10maboveground"]
@@ -192,15 +193,16 @@ cldc_NBM = data_NBM["TCDC_surface"]
 
 # Increase the speed here
 elev = np.atleast_3d(data_elev["var"])
+# Get the elevation
 elev = np.swapaxes(elev, 0, 1)
 elev = np.swapaxes(elev, 0, 2)
 
 ##%%% Combine NDFD and NBM
 #log.info("Combine NDFD and NBM datasets")
-#temp_mix = np.concatenate((temp_NDFD2, temp_NBM), axis=2)
-#dewp_mix = np.concatenate((dewp_NDFD2, dewp_NBM), axis=2)
-#wind_mix = np.concatenate((wind_NDFD2, wind_NBM), axis=2)
-#cldc_mix = np.concatenate((cldc_NDFD2, cldc_NBM), axis=2)
+#temp_mix = np.concatenate((temp_NDFD2, temp_NBM), axis=0)
+#dewp_mix = np.concatenate((dewp_NDFD2, dewp_NBM), axis=0)
+#wind_mix = np.concatenate((wind_NDFD2, wind_NBM), axis=0)
+#cldc_mix = np.concatenate((cldc_NDFD2, cldc_NBM), axis=0)
 ## DON'T COMBINE FOR NOW
 log.info("DO NOTCombine NDFD and NBM datasets. Using NBM instead")
 temp_mix =  temp_NBM
@@ -341,26 +343,26 @@ rad_mix = np.where(nght_mix == 0, 1, 0)
 #%%% Calculate Wet Bulb Temperature
 log.info("Calculate Wet Bulb Temperature for RTMA Dataset")
 twb_sun_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
-print(twb_sun_RTMA[0,180:250,100])
+#print(twb_sun_RTMA[0,180:250,100])
 twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 
 log.info("Calculate Wet Bulb Temperature for NDFD Dataset")
 twb_sun_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
-print(twb_sun_NDFD[0,180:250,100])
+#print(twb_sun_NDFD[0,180:250,100])
 twb_shade_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 twb_actual_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 
 #%%% Calculate Wet Globe Temperature
 log.info("Calculate Wet Globe Temperature for RTMA Dataset")
 tglobe_sun_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, np.cos(zenith_RTMA*np.pi/180))
-print(tglobe_sun_RTMA[0,180:250,100])
+#print(tglobe_sun_RTMA[0,180:250,100])
 tglobe_shade_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180)
 tglobe_actual_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180)
 
 log.info("Calculate Wet Globe Temperature for NDFD Dataset")
 tglobe_sun_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, zenith_NDFD*np.pi/180)
-print(tglobe_sun_NDFD[0,180:250,100])
+#print(tglobe_sun_NDFD[0,180:250,100])
 tglobe_shade_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, zenith_NDFD*np.pi/180)
 tglobe_actual_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, zenith_NDFD*np.pi/180)
 
@@ -368,17 +370,18 @@ tglobe_actual_NDFD = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_act_
 #%%% Calculate Wet Bulb Globe Temperature
 log.info("Combine Wet Bulb and Wet Globe Temperature for RTMA Dataset")
 WBGT_sun_RTMA = 0.7*twb_sun_RTMA + 0.2*tglobe_sun_RTMA + 0.1*temp_RTMA
-print(WBGT_sun_RTMA[0,180:250,100])
+#print(WBGT_sun_RTMA[0,180:250,100])
 WBGT_shade_RTMA = 0.7*twb_shade_RTMA + 0.2*tglobe_shade_RTMA + 0.1*temp_RTMA
 WBGT_actual_RTMA = 0.7*twb_actual_RTMA + 0.2*tglobe_actual_RTMA + 0.1*temp_RTMA
 
 log.info("Combine Wet Bulb and Wet Globe Temperature for NDFD Dataset")
 WBGT_sun_NDFD = 0.7*twb_sun_NDFD + 0.2*tglobe_sun_NDFD + 0.1*temp_mix
-print(WBGT_sun_NDFD[0,180:250,100])
+#print(WBGT_sun_NDFD[0,180:250,100])
 WBGT_shade_NDFD = 0.7*twb_shade_NDFD + 0.2*tglobe_shade_NDFD + 0.1*temp_mix
 WBGT_actual_NDFD = 0.7*twb_actual_NDFD + 0.2*tglobe_actual_NDFD + 0.1*temp_mix
 
 log.info("Combine RTMA and NDFD Datasets")
+#Convert from C to F
 WBGT_sun = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), axis=0)
 WBGT_shade = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), axis=0)
 WBGT_actual = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_NDFD*(9/5)+32), axis=0)
@@ -406,8 +409,9 @@ out_time = outfile.createVariable('time', 'f8', ('t'),zlib=True)
 out_time.setncatts({
                     'standard_name': u"time",\
                     'long_name': u"time",\
-                    'units':u"Minutes Since 2929-06-20 00:00:00",\
+                    'units':u"Hours Since "+vtime+"",\
                     'coordinates':u'time',\
+                    '_CoordinateAxisType':U'Time',\
                     'calendar':u'gregorian',\
 })
 out_time[:]=['0','1']
