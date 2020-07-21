@@ -17,6 +17,20 @@ log = logging.getLogger(__name__)
 
 from netCDF4 import Dataset
 
+# Function to build data
+# written by JAM July 2020
+def build_data(date):
+  print("Stuff goes here")
+
+def build_data_RTMA(date):
+  print("Stuff goes here")
+  #cat /data/ncep/rtma/202007/20200720/rtma2p5.t05z.2dvaranl_ndfd.grb2 /data/ncep/rtma/202007/20200720/rtma2p5.t06z.2dvaranl_ndfd.grb2 > input/rtma.grib2
+  #wgrib2 input/rtma.grib2 -small_grib 275.0609:285.8117 32.98101:40.3277 input/rtma_small.grib2
+  #wgrib2 input/rtma_small.grib2 -s | egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | wgrib2 -i input/rtma_small.grib2 -netcdf input/rtma.nc
+  #rm -rf input/rtma_small.grib2 input/rtma.grib2
+
+
+
 #%% Functions
 #%%% Utility
 def to_state(gdf, statelist=["North Carolina"]):
@@ -38,22 +52,20 @@ def to_state(gdf, statelist=["North Carolina"]):
         log.debug("Finished processing {}".format(statelabels[row]))
     return statemasks, statelabels, states
 
-def timing(z=6,nx=370,ny=420,nt=1):
+def file_timing(z=6):
     log.debug("Processing timing for z={}".format(z))
     today_dt = datetime.datetime.utcnow()
-    today_d = today_dt.date()
-    
+    today_d = today_dt.date()                                                                                                                                                                                                               
     yesterday_d = today_dt.date() - datetime.timedelta(days=1)
     fivedays_d = today_dt.date() + datetime.timedelta(days=5)
-    
     z_duration = (datetime.datetime.min + datetime.timedelta(hours=z)).time()
     z1_duration = (datetime.datetime.min + datetime.timedelta(hours=z+1)).time()
     step = datetime.timedelta(hours = 1)
-    
+
     # RTMA
     RTMA_end = datetime.datetime.combine(today_d, z_duration)
     RTMA_start = datetime.datetime.combine(yesterday_d, z_duration)
-    
+
     RTMA_dates = [None]*25
     RTMA_dates_int = [None]*25
     RTMA_hours = [None]*25
@@ -66,15 +78,11 @@ def timing(z=6,nx=370,ny=420,nt=1):
         n += 1
     RTMA_dates = RTMA_dates[:n]
     RTMA_dates_int = RTMA_dates_int[:n]
-    jday_RTMA = np.broadcast_to(RTMA_dates_int, (420,370,25))
-    hour_RTMA = np.broadcast_to(RTMA_hours, (420,370,25))
-    jday_RTMA = np.swapaxes(jday_RTMA, 0, 2)
-    hour_RTMA = np.swapaxes(hour_RTMA, 0, 2)
-    
-    # NDFD 
+
+    # NDFD
     NDFD2_end = datetime.datetime.combine(fivedays_d, z_duration)
     NDFD2_start = datetime.datetime.combine(today_d, z1_duration)
-    
+
     NDFD2_dates = [None]*120
     NDFD2_dates_int = [None]*120
     NDFD2_hours = [None]*120
@@ -87,28 +95,52 @@ def timing(z=6,nx=370,ny=420,nt=1):
         n += 1
     NDFD2_dates = NDFD2_dates[:n]
     NDFD2_dates_int = NDFD2_dates_int[:n]
-    jday_NDFD2 = np.broadcast_to(NDFD2_dates_int, (420,370,120))
-    hour_NDFD2 = np.broadcast_to(NDFD2_hours, (420,370,120))
+
+    return RTMA_dates,RTMA_dates_int,RTMA_hours,NDFD2_dates,NDFD2_dates_int,NDFD2_hours
+
+def timing(z=6,nx=370,ny=420,nt=1):
+    RTMA_dates,RTMA_dates_int,RTMA_hours,NDFD2_dates,NDFD2_dates_int,NDFD2_hours =  file_timing(z)
+    
+    # Convert to 3d grids
+    # RTMA
+    nt_rtma = len(RTMA_dates_int)
+    jday_RTMA = np.broadcast_to(RTMA_dates_int, (nx,ny,nt_rtma))
+    hour_RTMA = np.broadcast_to(RTMA_hours, (nx,ny,nt_rtma))
+    jday_RTMA = np.swapaxes(jday_RTMA, 0, 2)
+    hour_RTMA = np.swapaxes(hour_RTMA, 0, 2)
+
+    # NDFD
+    nt_ndfd = len(NDFD2_dates_int)
+    jday_NDFD2 = np.broadcast_to(NDFD2_dates_int, (nx,ny,nt_ndfd))
+    hour_NDFD2 = np.broadcast_to(NDFD2_hours, (nx,ny,nt_ndfd))
     jday_NDFD2 = np.swapaxes(jday_NDFD2, 0, 2)
     hour_NDFD2 = np.swapaxes(hour_NDFD2, 0, 2)
-    
-    jday_NDFD = np.concatenate((jday_NDFD2[0:36,:,:], 
+
+    jday_NDFD = np.concatenate((jday_NDFD2[0:36,:,:],
                                 jday_NDFD2[38::3,:,:]),
                                axis=0)
-    
-    hour_NDFD = np.concatenate((hour_NDFD2[0:36,:,:], 
+
+    hour_NDFD = np.concatenate((hour_NDFD2[0:36,:,:],
                                 hour_NDFD2[38::3,:,:]),
                                axis=0)
     return jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_NDFD2, hour_NDFD2
 
 #%%% Dimension Imports. Written by JAM Jul 2020
-def RTMA_import_dims(filename):
+def import_dims(filename):
     infile = Dataset(filename, "a", format="NETCDF4")
     nx = infile.dimensions['x'].size
     ny = infile.dimensions['y'].size
     nt = infile.dimensions['time'].size
+    infile.close()
+    return nx, ny, nt
+
+def import_times(filename):
+    infile = Dataset(filename, "a", format="NETCDF4")
     vtime = infile['time'].getncattr("reference_date")
-    return nx, ny, nt, vtime
+    times = infile['time'][:]
+    infile.close()
+    return vtime, times
+
 
 #%%% Data Imports
 def RTMA_import(filename):

@@ -27,7 +27,19 @@ np.warnings.filterwarnings('ignore')
 #%%% Constants
 Z = 6
 statelist = ["North Carolina", "Virginia"]
-nx,ny,nt,vtime = utilities.RTMA_import_dims("input/rtma.nc")
+nx,ny,nt = utilities.import_dims("input/rtma.nc")
+vtime_rtma,times_rtma = utilities.import_times("input/rtma.nc")
+vtime_ndfd,times_ndfd = utilities.import_times("input/ndfd.nc")
+vtime_nbm,times_nbm = utilities.import_times("input/nbm.nc")
+
+source_rtma = ["rtma" for i in range(0,len(times_rtma))]
+source_ndfd = ["ndfd" for i in range(0,len(times_ndfd))]
+source_nbm = ["nbm" for i in range(0,len(times_nbm))]
+
+times = np.hstack((times_rtma, times_nbm))
+times_source = np.hstack((source_rtma, source_nbm))
+print(times)
+print(times_source)
 
 #%%% Longitude and Latitude 
 log.info("Longitude and Latitude")
@@ -395,6 +407,7 @@ outfile.institution = "Southeast Regional Climate Center"
 outfile.source = "TBD"
 outfile.Conventions = 'CF-1.5'
 outfile.references = "TBD"
+outfile.validtime = vtime_rtma
 
 # Create the dimensions
 #lon = outfile.createDimension("lat", nx)
@@ -409,12 +422,14 @@ out_time = outfile.createVariable('time', 'f8', ('t'),zlib=True)
 out_time.setncatts({
                     'standard_name': u"time",\
                     'long_name': u"time",\
-                    'units':u"Hours Since "+vtime+"",\
+                    #'units':u"Hours Since "+vtime+"",\
+                    'units':u"Seconds since 1970-01-01 00:00:00.0 0:00",\
                     'coordinates':u'time',\
                     '_CoordinateAxisType':U'Time',\
                     'calendar':u'gregorian',\
+                    'reference_date':u""+vtime_rtma+"",\
 })
-out_time[:]=['0','1']
+out_time[:]=times[:]
 
 # create latitude axis
 out_lat = outfile.createVariable('latitude', 'f8', ('y','x'),zlib=True)
@@ -438,7 +453,18 @@ out_lon.setncatts({
 })
 out_lon[:,:]=lon_RTMA[:,:]-360
 
+### Add the data source
+out_source = outfile.createVariable('source', 'S10', ('t'),zlib=True)
+out_source.setncatts({
+                    'standard_name': u"Data Source Used",\
+                    'long_name': u"Data Source Used",\
+})
+out_source[:]=times_source[:]
+
+# create latitude axis
+
 # Add the WBGT_SUN
+log.info("Writing out WBGT Sun to file")
 WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('t','y','x'),zlib=True)
 #WBGT_sun_var = outfile.createVariable("wbgt_sun","f8",('y','x','t'),zlib=True)
 WBGT_sun_var.setncatts({
@@ -449,14 +475,15 @@ WBGT_sun_var.setncatts({
                     'level_desc':u"Surface",\
                     'min': 0,\
 })
-print("var WBGT_sun=",WBGT_sun.shape)
-print("nc WBGT_sun=",WBGT_sun_var.shape)
+#print("var WBGT_sun=",WBGT_sun.shape)
+#print("nc WBGT_sun=",WBGT_sun_var.shape)
 WBGT_sun_var[:,:,:] = WBGT_sun[:,:,:]
 #outfile.variables['wbgt_sun'][:] = WBGT_sun
 
 # Add the WBGT_SHADE
 #WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('lat','lon','time'),zlib=True)
 #WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('y','x','t'),zlib=True)
+log.info("Writing out WBGT Shade to file")
 WBGT_shade_var = outfile.createVariable("wbgt_shade","f8",('t','y','x'),zlib=True)
 WBGT_shade_var.setncatts({
                     'long_name': u"Shade WBGT",\
@@ -470,6 +497,7 @@ WBGT_shade_var[:,:,:] = WBGT_shade[:,:,:]
 
 # Add the WBGT_ACTUAL
 #WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('y','x','t'),zlib=True)
+log.info("Writing out WBGT Actual to file")
 WBGT_actual_var = outfile.createVariable("wbgt_actual","f8",('t','y','x'),zlib=True)
 WBGT_actual_var.setncatts({
                     'long_name': u"Actual WBGT",\
