@@ -66,8 +66,10 @@ def timing(z=6):
         n += 1
     RTMA_dates = RTMA_dates[:n]
     RTMA_dates_int = RTMA_dates_int[:n]
-    jday_RTMA = np.broadcast_to(RTMA_dates_int, (420, 370, 25))
-    hour_RTMA = np.broadcast_to(RTMA_hours, (420, 370, 25))
+    jday_RTMA = np.broadcast_to(RTMA_dates_int, (420,370,25))
+    hour_RTMA = np.broadcast_to(RTMA_hours, (420,370,25))
+    jday_RTMA = np.swapaxes(jday_RTMA, 0, 2)
+    hour_RTMA = np.swapaxes(hour_RTMA, 0, 2)
     
     # NDFD 
     NDFD2_end = datetime.datetime.combine(fivedays_d, z_duration)
@@ -85,16 +87,18 @@ def timing(z=6):
         n += 1
     NDFD2_dates = NDFD2_dates[:n]
     NDFD2_dates_int = NDFD2_dates_int[:n]
-    jday_NDFD2 = np.broadcast_to(NDFD2_dates_int, (420, 370, 120))
-    hour_NDFD2 = np.broadcast_to(NDFD2_hours, (420, 370, 120))
+    jday_NDFD2 = np.broadcast_to(NDFD2_dates_int, (420,370,120))
+    hour_NDFD2 = np.broadcast_to(NDFD2_hours, (420,370,120))
+    jday_NDFD2 = np.swapaxes(jday_NDFD2, 0, 2)
+    hour_NDFD2 = np.swapaxes(hour_NDFD2, 0, 2)
     
-    jday_NDFD = np.concatenate((jday_NDFD2[:,:,0:36], 
-                                jday_NDFD2[:,:,38::3]),
-                               axis=2)
+    jday_NDFD = np.concatenate((jday_NDFD2[0:36,:,:], 
+                                jday_NDFD2[38::3,:,:]),
+                               axis=0)
     
-    hour_NDFD = np.concatenate((hour_NDFD2[:,:,0:36], 
-                                hour_NDFD2[:,:,38::3]),
-                               axis=2)
+    hour_NDFD = np.concatenate((hour_NDFD2[0:36,:,:], 
+                                hour_NDFD2[38::3,:,:]),
+                               axis=0)
     return jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_NDFD2, hour_NDFD2
 
 #%%% Data Imports
@@ -109,9 +113,8 @@ def RTMA_import(filename):
         vars_d[v] = rootgrp[v]
         data_d[v] = np.squeeze(rootgrp[v][:])
         if(data_d[v].ndim == 3):
-          data_d[v] = np.swapaxes(data_d[v], 0, 2)
 	  # JUST DO 2 HOURS FOR NOW FOR TESTING
-          data_d[v] = data_d[v][:,:,:2] 
+          data_d[v] = data_d[v][:2,:,:] 
         data_d[v].fill_value = np.nan
         unit_d[v] = rootgrp[v].getncattr("units")
         if '_FillValue' in rootgrp[v].ncattrs():
@@ -132,10 +135,9 @@ def NDFD2_import(filename):
         data_d[v] = np.squeeze(rootgrp[v][:])
         #data_d[v] = rootgrp[v][:]
         if(data_d[v].ndim == 3):
-          data_d[v] = np.swapaxes(data_d[v], 0, 2)
-          data_d[v] = data_d[v][:,:,:46] 
+          data_d[v] = data_d[v][:46,:,:] 
 	  # JUST DO 2 HOURS FOR NOW FOR TESTING
-          data_d[v] = data_d[v][:,:,:2] 
+          data_d[v] = data_d[v][:2,:,:] 
         data_d[v].fill_value = np.nan
         if '_FillValue' in rootgrp[v].ncattrs():
           fill_d[v] = rootgrp[v].getncattr("_FillValue")
@@ -156,9 +158,8 @@ def small_import(filename):
         vars_d[v] = rootgrp[v]
         data_d[v] = rootgrp[v][:]
         if(data_d[v].ndim == 3):
-          data_d[v] = np.swapaxes(data_d[v], 0, 2)
 	  # JUST DO 2 HOURS FOR NOW FOR TESTING
-          data_d[v] = data_d[v][:,:,:2] 
+          data_d[v] = data_d[v][:2,:,:] 
     return vars_d, data_d
 
 #%%% Bias Functions
@@ -179,11 +180,11 @@ def RTMA_bias(data_RTMA, z):
             "wind_bias": np.array([0.12,0.14,0.14,0.15,0.2,0.26,0.26,0.27,0.27,0.23,0.22,0.25,0.21,0.17,0.09,0.07,-0.01,-0.15,-0.02,0.09,0.1,0.11,0.1,0.12,0.12]),
             "srad_bias": np.array([0,0,0,0.13,21.51,90.23,82.56,35.49,-24.2,-87.89,-160.95,-229.6,-272.25,-287.4,-271.61,-221.73,-154.68,-68.81,-1.86,0.08,0,0,0,0,0])
             }
-    ntime = data_RTMA["TMP_2maboveground"].shape[2]
+    ntime = data_RTMA["TMP_2maboveground"].shape[0]
     for i in range(0, ntime):  
-        data_RTMA["TMP_2maboveground"][:, :, i] = data_RTMA["TMP_2maboveground"][:, :, i] + bias_table["temp_bias"][i]
-        data_RTMA["DPT_2maboveground"][:, :, i] = data_RTMA["DPT_2maboveground"][:, :, i] + bias_table["dew_bias"][i]
-        data_RTMA["WIND_10maboveground"][:, :, i] = data_RTMA["WIND_10maboveground"][:, :, i] + bias_table["wind_bias"][i]
+        data_RTMA["TMP_2maboveground"][i,:,:] = data_RTMA["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
+        data_RTMA["DPT_2maboveground"][i,:,:] = data_RTMA["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
+        data_RTMA["WIND_10maboveground"][i,:,:] = data_RTMA["WIND_10maboveground"][i,:,:] + bias_table["wind_bias"][i]
     return data_RTMA
 
 def NDFD_bias(data_NDFD, z):
@@ -194,11 +195,11 @@ def NDFD_bias(data_NDFD, z):
         "wind_bias": np.array([0.5,0.7,0.6,0.6,0.6,0.5,0.4,0.5,0.4,0.4,0.4,0.4,0,0.2,0.3,0.3,0.5,0.5,0.2,0.6,0.7,0.6,0.8,0.9]),
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-103.1,-78.9,-34.1,22.9,76.8,133,182.1,189.5,179.9,139.5,91.5,29.5])
         }
-    ntime = data_NDFD["TMP_2maboveground"].shape[2]
+    ntime = data_NDFD["TMP_2maboveground"].shape[0]
     for i in range(0, ntime):  
-        data_NDFD["TMP_2maboveground"][:, :, i] = data_NDFD["TMP_2maboveground"][:, :, i] + bias_table["temp_bias"][i]
-        data_NDFD["DPT_2maboveground"][:, :, i] = data_NDFD["DPT_2maboveground"][:, :, i] + bias_table["dew_bias"][i]
-        data_NDFD["WIND_10maboveground"][:, :, i] = data_NDFD["WIND_10maboveground"][:, :, i] + bias_table["wind_bias"][i]
+        data_NDFD["TMP_2maboveground"][i,:,:] = data_NDFD["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
+        data_NDFD["DPT_2maboveground"][i,:,:] = data_NDFD["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
+        data_NDFD["WIND_10maboveground"][i,:,:] = data_NDFD["WIND_10maboveground"][i,:,:] + bias_table["wind_bias"][i]
     return data_NDFD
 
 def NBM_bias(data_NBM, z):
@@ -209,11 +210,11 @@ def NBM_bias(data_NBM, z):
         "wind_bias": np.array([0,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.2,-0.3,-0.3,-0.2,-0.2,-0.2,-0.2,-0.3,-0.2,-0.1,-0.1,0,0.1]),
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-101.7,-74.1,-23.1,39.7,99,155.5,197.2,208,193.6,150.5,95.8,30.5])
         }
-    ntime = data_NBM["TMP_2maboveground"].shape[2]
+    ntime = data_NBM["TMP_2maboveground"].shape[0]
     for i in range(0, ntime):  
-        data_NBM["TMP_2maboveground"][:, :, i] = data_NBM["TMP_2maboveground"][:, :, i] + bias_table["temp_bias"][i]
-        data_NBM["DPT_2maboveground"][:, :, i] = data_NBM["DPT_2maboveground"][:, :, i] + bias_table["dew_bias"][i]
-        data_NBM["WIND_10maboveground"][:, :, i] = data_NBM["WIND_10maboveground"][:, :, i] + bias_table["wind_bias"][i]
+        data_NBM["TMP_2maboveground"][i,:,:] = data_NBM["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
+        data_NBM["DPT_2maboveground"][i,:,:] = data_NBM["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
+        data_NBM["WIND_10maboveground"][i,:,:] = data_NBM["WIND_10maboveground"][i,:,:] + bias_table["wind_bias"][i]
     return data_NBM
 
 def srad_bias(data_srad, z=12, dataset="srad_bias_RTMA"):
@@ -228,9 +229,9 @@ def srad_bias(data_srad, z=12, dataset="srad_bias_RTMA"):
             "srad_bias_RTMA": np.array([0,0,0,0.13,21.51,90.23,82.56,35.49,-24.2,-87.89,-160.95,-229.6,-272.25,-287.4,-271.61,-221.73,-154.68,-68.81,-1.86,0.08,0,0,0,0,0])
             }
 
-    ntime = data_srad.shape[2]
+    ntime = data_srad.shape[0]
     for i in range(0, ntime):  
-        data_srad[:, :, i] = data_srad[:, :, i] + bias_table[dataset][i]
+        data_srad[i,:,:] = data_srad[i,:,:] + bias_table[dataset][i]
     return data_srad
 
 #%%% Testing
@@ -242,7 +243,7 @@ def data_gen(datatype):
                 "TCDC_entireatmosphere_consideredasasinglelayer_"]
         data_out = dict.fromkeys(keys)
         
-        data_shape = (420, 370, 25)
+        data_shape = (25,370,420)
         data_inside = np.full(data_shape, 100, dtype="float64")
         for key in keys:
             data_out[key] = data_inside
@@ -254,7 +255,7 @@ def data_gen(datatype):
                 "TCDC_P0_L1_GLC0"]
         data_out = dict.fromkeys(keys)
         
-        data_shape = (420, 370, 46)
+        data_shape = (46,370,420)
         data_inside = np.full(data_shape, 100, dtype="float64")
         for key in keys:
             data_out[key] = data_inside
@@ -266,7 +267,7 @@ def data_gen(datatype):
                 "TCDC_P0_L1_GLC0"]
         data_out = dict.fromkeys(keys)
         
-        data_shape = (420, 370, 18)
+        data_shape = (18,370,420)
         data_inside = np.full(data_shape, 100, dtype="float64")
         for key in keys:
             data_out[key] = data_inside

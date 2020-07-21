@@ -30,9 +30,9 @@ def solar_calc(lat_mask_RTMA, lon_mask_RTMA, jday_RTMA_mask, hour_RTMA,
     zenith_RTMA = 90 - (elev_RTMA*(180/np.pi))
     zenith_NDFD2 = 90 - (elev_NDFD2*(180/np.pi))
 
-    zenith_NDFD = np.concatenate((zenith_NDFD2[:,:,0:36], 
-                                  zenith_NDFD2[:,:,38::3]),
-                                 axis=2)
+    zenith_NDFD = np.concatenate((zenith_NDFD2[0:36,:,:], 
+                                  zenith_NDFD2[38::3,:,:]),
+                                 axis=0)
     return zenith_RTMA, zenith_NDFD, zenith_NDFD2
     
 def rh_calc(temp, dewp):
