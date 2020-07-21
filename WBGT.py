@@ -39,7 +39,7 @@ vtime_ndfd,times_ndfd = utilities.import_times("input/ndfd.nc")
 vtime_nbm,times_nbm = utilities.import_times("input/nbm.nc")
 
 RTMA_dates,RTMA_dates_int,RTMA_hours,NDFD2_dates,NDFD2_dates_int,NDFD2_hours =  utilities.file_timing(Z)
-print(RTMA_dates)
+#print(RTMA_dates)
 
 source_rtma = ["rtma" for i in range(0,len(times_rtma))]
 source_ndfd = ["ndfd" for i in range(0,len(times_ndfd))]
@@ -47,8 +47,8 @@ source_nbm = ["nbm" for i in range(0,len(times_nbm))]
 
 times = np.hstack((times_rtma, times_nbm))
 times_source = np.hstack((source_rtma, source_nbm))
-print(times)
-print(times_source)
+#print(times)
+#print(times_source)
 
 #%%% Longitude and Latitude 
 log.info("Longitude and Latitude")
@@ -129,19 +129,19 @@ zenith_RTMA, zenith_NDFD, zenith_NDFD2 = equations.solar_calc(lat_mask_RTMA,
                                                               hour_NDFD2)
 
 # Restrict data to 2 times
-log.info("Restricting items for two times FOR TESTING")
-jday_RTMA = jday_RTMA[:2,:,:]
-jday_RTMA_mask = jday_RTMA_mask[:2,:,:]
-hour_RTMA = hour_RTMA[:2,:,:]
-zenith_RTMA = zenith_RTMA[:2,:,:]
-jday_NDFD = jday_NDFD[:2,:,:]
-jday_NDFD_mask = jday_NDFD_mask[:2,:,:]
-hour_NDFD = hour_NDFD[:2,:,:]
-zenith_NDFD = zenith_NDFD[:2,:,:]
-jday_NDFD2 = jday_NDFD2[:2,:,:]
-jday_NDFD2_mask = jday_NDFD2_mask[:2,:,:]
-hour_NDFD2 = hour_NDFD2[:2,:,:]
-zenith_NDFD2 = zenith_NDFD2[:2,:,:]
+#log.info("Restricting items for two times FOR TESTING")
+#jday_RTMA = jday_RTMA[:2,:,:]
+#jday_RTMA_mask = jday_RTMA_mask[:2,:,:]
+#hour_RTMA = hour_RTMA[:2,:,:]
+#zenith_RTMA = zenith_RTMA[:2,:,:]
+#jday_NDFD = jday_NDFD[:2,:,:]
+#jday_NDFD_mask = jday_NDFD_mask[:2,:,:]
+#hour_NDFD = hour_NDFD[:2,:,:]
+#zenith_NDFD = zenith_NDFD[:2,:,:]
+#jday_NDFD2 = jday_NDFD2[:2,:,:]
+#jday_NDFD2_mask = jday_NDFD2_mask[:2,:,:]
+#hour_NDFD2 = hour_NDFD2[:2,:,:]
+#zenith_NDFD2 = zenith_NDFD2[:2,:,:]
 
 #%% Data Imports
 log.info("Data Loading")
@@ -172,10 +172,10 @@ vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_NCVA.n
 ##%%% RTMA Bias Correction
 log.info("SERCC's RTMA Bias Correction")
 data_RTMA = utilities.RTMA_bias(data_RTMA, z=Z)
-log.info("SERCC's NDFD Bias Correction")
-data_NDFD2 = utilities.RTMA_bias(data_NDFD2, z=Z)
-log.info("SERCC's NBM Bias Correction")
-data_NBM = utilities.RTMA_bias(data_NBM, z=Z)
+#log.info("SERCC's NDFD Bias Correction")
+#data_NDFD2 = utilities.NDFD_bias(data_NDFD2, z=Z)
+#log.info("SERCC's NBM Bias Correction")
+#data_NBM = utilities.NBM_bias(data_NBM, z=Z)
 
 #%%% Wind Speed Correction
 log.info("Wind Speed Correction")
@@ -224,8 +224,8 @@ elev = np.swapaxes(elev, 0, 2)
 #dewp_mix = np.concatenate((dewp_NDFD2, dewp_NBM), axis=0)
 #wind_mix = np.concatenate((wind_NDFD2, wind_NBM), axis=0)
 #cldc_mix = np.concatenate((cldc_NDFD2, cldc_NBM), axis=0)
-## DON'T COMBINE FOR NOW
-log.info("DO NOTCombine NDFD and NBM datasets. Using NBM instead")
+# DON'T COMBINE FOR NOW
+log.info("DO NOT Combine NDFD and NBM datasets. Using NBM instead")
 temp_mix =  temp_NBM
 dewp_mix =  dewp_NBM
 wind_mix =  wind_NBM
@@ -290,6 +290,8 @@ sr_NDFD = np.where(combined_mask, sr_NDFD, np.nan)*nght_mix
 
 sun_NDFD = sr_NDFD
 shd_NDFD = sr_NDFD*(1-0.75*(1**3.4))
+print("sr_NDFD = ",sr_NDFD.shape)
+print("cldc_mix = ",cldc_mix.shape)
 act_NDFD = sr_NDFD*(1-0.75*(np.power(cldc_mix, 3.4)))
 
 #%%% Morning Shade

@@ -253,6 +253,7 @@ def timing(z=6,nx=370,ny=420,nt=1):
     hour_NDFD = np.concatenate((hour_NDFD2[0:36,:,:],
                                 hour_NDFD2[38::3,:,:]),
                                axis=0)
+
     return jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_NDFD2, hour_NDFD2
 
 #%%% Dimension Imports. Written by JAM Jul 2020
@@ -283,9 +284,9 @@ def RTMA_import(filename):
     for v in vs:
         vars_d[v] = rootgrp[v]
         data_d[v] = np.squeeze(rootgrp[v][:])
-        if(data_d[v].ndim == 3):
-	  # JUST DO 2 HOURS FOR NOW FOR TESTING
-          data_d[v] = data_d[v][:2,:,:] 
+        #if(data_d[v].ndim == 3):
+	#  # JUST DO 2 HOURS FOR NOW FOR TESTING
+        #  #data_d[v] = data_d[v][:2,:,:] 
         data_d[v].fill_value = np.nan
         unit_d[v] = rootgrp[v].getncattr("units")
         if '_FillValue' in rootgrp[v].ncattrs():
@@ -308,7 +309,7 @@ def NDFD2_import(filename):
         if(data_d[v].ndim == 3):
           data_d[v] = data_d[v][:46,:,:] 
 	  # JUST DO 2 HOURS FOR NOW FOR TESTING
-          data_d[v] = data_d[v][:2,:,:] 
+          #data_d[v] = data_d[v][:2,:,:] 
         data_d[v].fill_value = np.nan
         if '_FillValue' in rootgrp[v].ncattrs():
           fill_d[v] = rootgrp[v].getncattr("_FillValue")
@@ -328,9 +329,9 @@ def small_import(filename):
     for v in vs:
         vars_d[v] = rootgrp[v]
         data_d[v] = rootgrp[v][:]
-        if(data_d[v].ndim == 3):
-	  # JUST DO 2 HOURS FOR NOW FOR TESTING
-          data_d[v] = data_d[v][:2,:,:] 
+        #if(data_d[v].ndim == 3):
+	#  # JUST DO 2 HOURS FOR NOW FOR TESTING
+        #  data_d[v] = data_d[v][:2,:,:] 
     return vars_d, data_d
 
 #%%% Bias Functions
@@ -352,12 +353,13 @@ def RTMA_bias(data_RTMA, z):
             "srad_bias": np.array([0,0,0,0.13,21.51,90.23,82.56,35.49,-24.2,-87.89,-160.95,-229.6,-272.25,-287.4,-271.61,-221.73,-154.68,-68.81,-1.86,0.08,0,0,0,0,0])
             }
     ntime = data_RTMA["TMP_2maboveground"].shape[0]
-    print(data_RTMA["TMP_2maboveground"][0,100,100])
+    print("ntime for RTMA = ",ntime)
+    #print(data_RTMA["TMP_2maboveground"][0,100,100])
     for i in range(0, ntime):  
         data_RTMA["TMP_2maboveground"][i,:,:] = data_RTMA["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
         data_RTMA["DPT_2maboveground"][i,:,:] = data_RTMA["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
         data_RTMA["WIND_10maboveground"][i,:,:] = data_RTMA["WIND_10maboveground"][i,:,:] + bias_table["wind_bias"][i]
-    print(data_RTMA["TMP_2maboveground"][0,100,100])
+    #print(data_RTMA["TMP_2maboveground"][0,100,100])
     return data_RTMA
 
 def NDFD_bias(data_NDFD, z):
@@ -369,6 +371,7 @@ def NDFD_bias(data_NDFD, z):
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-103.1,-78.9,-34.1,22.9,76.8,133,182.1,189.5,179.9,139.5,91.5,29.5])
         }
     ntime = data_NDFD["TMP_2maboveground"].shape[0]
+    print("ntime for NDFD = ",ntime)
     print(data_NDFD["TMP_2maboveground"][0,100,100])
     for i in range(0, ntime):  
         data_NDFD["TMP_2maboveground"][i,:,:] = data_NDFD["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
@@ -386,6 +389,10 @@ def NBM_bias(data_NBM, z):
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-101.7,-74.1,-23.1,39.7,99,155.5,197.2,208,193.6,150.5,95.8,30.5])
         }
     ntime = data_NBM["TMP_2maboveground"].shape[0]
+    print("ntime for NBM = ",ntime)
+    print(data_NBM["TMP_2maboveground"][:,0,0])
+    times = data_NBM["TMP_2maboveground"][:,0,0]
+    #for i,t in enumerate(times):  
     for i in range(0, ntime):  
         data_NBM["TMP_2maboveground"][i,:,:] = data_NBM["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
         data_NBM["DPT_2maboveground"][i,:,:] = data_NBM["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
