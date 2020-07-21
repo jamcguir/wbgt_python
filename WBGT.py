@@ -27,10 +27,19 @@ np.warnings.filterwarnings('ignore')
 #%%% Constants
 Z = 6
 statelist = ["North Carolina", "Virginia"]
+
+
+# Get the file list
+#files = utilities.file_list(Z)
+
+# File input
 nx,ny,nt = utilities.import_dims("input/rtma.nc")
 vtime_rtma,times_rtma = utilities.import_times("input/rtma.nc")
 vtime_ndfd,times_ndfd = utilities.import_times("input/ndfd.nc")
 vtime_nbm,times_nbm = utilities.import_times("input/nbm.nc")
+
+RTMA_dates,RTMA_dates_int,RTMA_hours,NDFD2_dates,NDFD2_dates_int,NDFD2_hours =  utilities.file_timing(Z)
+print(RTMA_dates)
 
 source_rtma = ["rtma" for i in range(0,len(times_rtma))]
 source_ndfd = ["ndfd" for i in range(0,len(times_ndfd))]

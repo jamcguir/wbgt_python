@@ -12,7 +12,10 @@ from shapely.geometry.polygon import Polygon
 
 import time
 import datetime 
+import os
+import subprocess
 import logging
+from datetime import timedelta
 log = logging.getLogger(__name__)
 
 from netCDF4 import Dataset
@@ -22,13 +25,71 @@ from netCDF4 import Dataset
 def build_data(date):
   print("Stuff goes here")
 
-def build_data_RTMA(date):
-  print("Stuff goes here")
-  #cat /data/ncep/rtma/202007/20200720/rtma2p5.t05z.2dvaranl_ndfd.grb2 /data/ncep/rtma/202007/20200720/rtma2p5.t06z.2dvaranl_ndfd.grb2 > input/rtma.grib2
-  #wgrib2 input/rtma.grib2 -small_grib 275.0609:285.8117 32.98101:40.3277 input/rtma_small.grib2
-  #wgrib2 input/rtma_small.grib2 -s | egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | wgrib2 -i input/rtma_small.grib2 -netcdf input/rtma.nc
-  #rm -rf input/rtma_small.grib2 input/rtma.grib2
+def build_data_RTMA(date_list,vdate):
+  outfile = "rtma.nc4"
+  outpath = "input/"+outfile
+  catpath = outfile.replace(outfile,"rtma_cat.grib2")
+  smallpath = outfile.replace(outfile,"rtma_small.grib2")
+  file_list = []
+  for tdate in date_list:
+	# Filepath
+        file_ym =  tdate.strftime("%Y%m")
+        file_ymd =  tdate.strftime("%Y%m%d")
+        file_h =  tdate.strftime("%H")
+        file_path = "/data/ncep/rtma/"+file_ym+"/"+file_ymd+"/rtma2p5.t"+file_h+"z.2dvaranl_ndfd.grb2"
+        if(os.path.isfile(file_path) == True):
+          # Add to the file list
+          file_list.append(file_path)
+  cmd_list = [
+	"/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
+	"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"",
+	"/usr/local/bin/wgrib2 "+smallpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+smallpath+" -netcdf "+outfile+"",
+	"rm -rf "+catpath+" "+smallpath+"",
+  ]
+  for cmd in cmd_list:
+    print(cmd)
+    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    process.wait()
+    print(process.returncode)
 
+  return outfile
+
+def build_data_NBM(date_list,vdate):
+  outfile = "nbm.nc4"
+  outpath = "input/"+outfile
+  catpath = outfile.replace(outfile,"nbm_cat.grib2")
+  smallpath = outfile.replace(outfile,"nbm_small.grib2")
+  file_list = []
+  vdatetime = datetime.datetime(vdate.year, vdate.month, vdate.day, 6)
+  print(vdatetime)
+  file_ym =  vdate.strftime("%Y%m")
+  file_ymd =  vdate.strftime("%Y%m%d")
+  file_h =  vdate.strftime("%H")
+  for tdate in date_list:
+        # Filepath
+        vdatediff = tdate - vdatetime
+        vdatediff_hr = int(divmod(vdatediff.total_seconds(),3600)[0])
+        vdatediff_fhr = str(vdatediff_hr).zfill(3)
+        file_ymdh =  tdate.strftime("%Y%m%d%H")
+        print(vdatediff_fhr)
+        file_path = "/data/nws/nbm/"+file_ym+"/"+file_ymd+"/06/blend.t06z.master.f"+vdatediff_fhr+".v"+file_ymdh+".co.grib2"
+        if(os.path.isfile(file_path) == True):
+          # Add to the file list
+          file_list.append(file_path)
+
+  cmd_list = [
+	"/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
+	"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"",
+	"/usr/local/bin/wgrib2 "+smallpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+smallpath+" -netcdf "+outfile+"",
+	"rm -rf "+catpath+" "+smallpath+"",
+  ]
+  for cmd in cmd_list:
+    print(cmd)
+    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    process.wait()
+    print(process.returncode)
+
+  return outfile
 
 
 #%% Functions
@@ -51,6 +112,74 @@ def to_state(gdf, statelist=["North Carolina"]):
         statelabels[row] = state["STATE_ABBR"]
         log.debug("Finished processing {}".format(statelabels[row]))
     return statemasks, statelabels, states
+
+def file_list(z=6):
+    log.debug("Processing timing for z={}".format(z))
+    today_dt = datetime.datetime.utcnow()
+    today_d = today_dt.date()                                                                                                                                                                                                               
+    yesterday_d = today_dt.date() - datetime.timedelta(days=1)
+    fivedays_d = today_dt.date() + datetime.timedelta(days=5)
+    z_duration = (datetime.datetime.min + datetime.timedelta(hours=z)).time()
+    z1_duration = (datetime.datetime.min + datetime.timedelta(hours=z+1)).time()
+    step = datetime.timedelta(hours = 1)
+
+    # RTMA
+    RTMA_end = datetime.datetime.combine(today_d, z_duration)
+    RTMA_start = datetime.datetime.combine(yesterday_d, z_duration)
+
+    files = []
+    rtma_files = []
+    rtma_dates = []
+    n = 0
+    while RTMA_start + n*step <= RTMA_end:
+        RTMA_date = RTMA_start + n*step
+        rtma_dates.append(RTMA_date)
+        n += 1
+
+    # Generate
+    #build_data_RTMA(rtma_dates, today_d)
+
+    # NBM
+    NBM_end = datetime.datetime.combine(fivedays_d, z_duration)
+    NBM_start = datetime.datetime.combine(today_d, z1_duration)
+
+    nbm_dates = []
+    n = 0
+    while NBM_start + n*step <= NBM_end:
+        NBM_date = NBM_start + n*step
+        nbm_dates.append(NBM_date)
+        n += 1
+
+    # Generate
+    build_data_NBM(nbm_dates, today_d)
+
+    # NDFD - Get todays
+    NDFD2_end = datetime.datetime.combine(fivedays_d, z_duration)
+    NDFD2_start = datetime.datetime.combine(today_d, z1_duration)
+
+    NDFD2_dates = [None]*120
+    NDFD2_dates_int = [None]*120
+    NDFD2_hours = [None]*120
+    NDFD2_files = []
+    n = 0
+    while NDFD2_start + n*step <= NDFD2_end:
+        NDFD2_date = NDFD2_start + n*step
+        NDFD2_dates[n] = NDFD2_date
+        # Filepath
+        file_ym =  NDFD2_date.strftime("%Y%m")
+        file_ymd =  NDFD2_date.strftime("%Y%m%d")
+        file_h =  NDFD2_date.strftime("%H")
+        file_path = "/data/ncep/rtma/"+file_ym+"/"+file_ymd+"/rtma2p5.t"+file_h+"z.2dvaranl_ndfd.grb2"
+        # Add to the file list
+        files.append({
+          'source':'NDFD',
+          'datetime':NDFD2_date,
+          'file':file_path,
+        })
+        n += 1
+
+    return files
+
 
 def file_timing(z=6):
     log.debug("Processing timing for z={}".format(z))
@@ -97,6 +226,7 @@ def file_timing(z=6):
     NDFD2_dates_int = NDFD2_dates_int[:n]
 
     return RTMA_dates,RTMA_dates_int,RTMA_hours,NDFD2_dates,NDFD2_dates_int,NDFD2_hours
+
 
 def timing(z=6,nx=370,ny=420,nt=1):
     RTMA_dates,RTMA_dates_int,RTMA_hours,NDFD2_dates,NDFD2_dates_int,NDFD2_hours =  file_timing(z)
