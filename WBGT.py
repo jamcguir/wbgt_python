@@ -68,7 +68,7 @@ for row in range(0, len(statemasks)):
 
 
 log.info("DO NOT Mask Application")
-#combined_mask = np.full((1,370,420), True)
+combined_mask = np.full((1,370,420), True)
 
 #%%% Mask Application
 log.info("Mask Application")
