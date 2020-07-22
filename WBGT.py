@@ -65,11 +65,11 @@ lat = lonlat.lat.to_numpy()
 lat_array = lat.reshape(1,ny,nx)
 
 # Create "stacked" arrays spanning across time scales
-lon_RTMA = np.repeat(lon_array, 25, axis=0)
-lat_RTMA = np.repeat(lat_array, 25, axis=0)
+lon_RTMA = np.repeat(lon_array, len(times_rtma), axis=0)
+lat_RTMA = np.repeat(lat_array, len(times_rtma), axis=0)
 
-lon_NDFD = np.repeat(lon_array, 64, axis=0)
-lat_NDFD = np.repeat(lat_array, 64, axis=0)
+lon_NDFD = np.repeat(lon_array, len(times_ndfd), axis=0)
+lat_NDFD = np.repeat(lat_array, len(times_ndfd), axis=0)
 
 lon_NDFD2 = np.repeat(lon_array, 120, axis=0)
 lat_NDFD2 = np.repeat(lat_array, 120, axis=0)
@@ -102,11 +102,11 @@ lat_array_masked = np.where(combined_mask, lat_array, np.nan)
 
 
 # Create "stacked" arrays spanning across time scales
-lon_mask_RTMA = np.repeat(lon_array_masked, 25, axis=0)
-lat_mask_RTMA = np.repeat(lat_array_masked, 25, axis=0)
+lon_mask_RTMA = np.repeat(lon_array_masked, len(times_rtma), axis=0)
+lat_mask_RTMA = np.repeat(lat_array_masked, len(times_rtma), axis=0)
 
-lon_mask_NDFD = np.repeat(lon_array_masked, 64, axis=0)
-lat_mask_NDFD = np.repeat(lat_array_masked, 64, axis=0)
+lon_mask_NDFD = np.repeat(lon_array_masked, len(times_ndfd), axis=0)
+lat_mask_NDFD = np.repeat(lat_array_masked, len(times_ndfd), axis=0)
 
 lon_mask_NDFD2 = np.repeat(lon_array_masked, 120, axis=0)
 lat_mask_NDFD2 = np.repeat(lat_array_masked, 120, axis=0)
@@ -373,10 +373,10 @@ twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA
 twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 
 log.info("Calculate Wet Bulb Temperature for NDFD Dataset")
-twb_sun_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
+twb_sun_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_sun_NDFD, sun_NDFD, fdb_sun_NDFD, np.cos(zenith_NDFD*np.pi/180), rad_mix)
 #print(twb_sun_NDFD[0,180:250,100])
-twb_shade_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
-twb_actual_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
+twb_shade_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_shd_NDFD, shd_NDFD, fdb_shd_NDFD, np.cos(zenith_NDFD*np.pi/180), rad_mix)
+twb_actual_NDFD = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_act_NDFD, act_NDFD, fdb_act_NDFD, np.cos(zenith_NDFD*np.pi/180), rad_mix)
 
 #%%% Calculate Wet Globe Temperature
 log.info("Calculate Wet Globe Temperature for RTMA Dataset")
