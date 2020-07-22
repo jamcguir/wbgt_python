@@ -305,11 +305,11 @@ def NDFD2_import(filename):
     for v in vs:
         vars_d[v] = rootgrp[v]
         data_d[v] = np.squeeze(rootgrp[v][:])
-        #data_d[v] = rootgrp[v][:]
-        #if(data_d[v].ndim == 3):
-        #  data_d[v] = data_d[v][:46,:,:] 
-	#  ## JUST DO 2 HOURS FOR NOW FOR TESTING
-        #  #data_d[v] = data_d[v][:2,:,:] 
+        data_d[v] = rootgrp[v][:]
+        if(data_d[v].ndim == 3):
+          data_d[v] = data_d[v][:46,:,:] 
+	  ## JUST DO 2 HOURS FOR NOW FOR TESTING
+          #data_d[v] = data_d[v][:2,:,:] 
         data_d[v].fill_value = np.nan
         if '_FillValue' in rootgrp[v].ncattrs():
           fill_d[v] = rootgrp[v].getncattr("_FillValue")
@@ -320,6 +320,32 @@ def NDFD2_import(filename):
         else:
           unit_d[v] = np.nan
     return vars_d, data_d, unit_d, fill_d 
+
+def NBM_import(filename):
+    rootgrp = Dataset(filename, "a", format="NETCDF4")
+    vs = [*rootgrp.variables.keys()]
+    vars_d = dict.fromkeys(vs)
+    data_d = dict.fromkeys(vs)
+    unit_d = dict.fromkeys(vs)
+    fill_d = dict.fromkeys(vs)
+    for v in vs:
+        vars_d[v] = rootgrp[v]
+        data_d[v] = np.squeeze(rootgrp[v][:])
+        data_d[v] = rootgrp[v][:]
+        #if(data_d[v].ndim == 3):
+        #  #data_d[v] = data_d[v][:46,:,:]
+        #  ## JUST DO 2 HOURS FOR NOW FOR TESTING
+        #  data_d[v] = data_d[v][:2,:,:]                                                                                                                                                                                            
+        data_d[v].fill_value = np.nan
+        if '_FillValue' in rootgrp[v].ncattrs():
+          fill_d[v] = rootgrp[v].getncattr("_FillValue")
+        else:
+          fill_d[v] = np.nan
+        if 'units' in rootgrp[v].ncattrs():
+          fill_d[v] = rootgrp[v].getncattr("units")
+        else:
+          unit_d[v] = np.nan
+    return vars_d, data_d, unit_d, fill_d
 
 def small_import(filename):
     rootgrp = Dataset(filename, "a", format="NETCDF4")

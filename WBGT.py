@@ -155,7 +155,7 @@ if not TESTMODE:
     vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import("input/rtma.nc")
     vars_NDFD2, data_NDFD2, unit_NDFD2, fill_NDFD2 = utilities.NDFD2_import("input/ndfd.nc")
     #vars_NBM, data_NBM = utilities.small_import("input/nbm.nc")
-    vars_NBM, data_NBM,unit_NBM,fill_NBM = utilities.NDFD2_import("input/nbm.nc")
+    vars_NBM, data_NBM,unit_NBM,fill_NBM = utilities.NBM_import("input/nbm.nc")
     #v3 - Native dataset format
     #vars_RTMA, data_RTMA, unit_RTMA, fill_RTMA = utilities.RTMA_import_grib("input/rtma_combo.grb2")
     #print(data_RTMA)
