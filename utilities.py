@@ -286,7 +286,7 @@ def RTMA_import(filename):
         data_d[v] = np.squeeze(rootgrp[v][:])
         #if(data_d[v].ndim == 3):
 	#  # JUST DO 2 HOURS FOR NOW FOR TESTING
-        #  #data_d[v] = data_d[v][:2,:,:] 
+        #  data_d[v] = data_d[v][:2,:,:] 
         data_d[v].fill_value = np.nan
         unit_d[v] = rootgrp[v].getncattr("units")
         if '_FillValue' in rootgrp[v].ncattrs():
@@ -306,10 +306,10 @@ def NDFD2_import(filename):
         vars_d[v] = rootgrp[v]
         data_d[v] = np.squeeze(rootgrp[v][:])
         #data_d[v] = rootgrp[v][:]
-        if(data_d[v].ndim == 3):
-          data_d[v] = data_d[v][:46,:,:] 
-	  # JUST DO 2 HOURS FOR NOW FOR TESTING
-          #data_d[v] = data_d[v][:2,:,:] 
+        #if(data_d[v].ndim == 3):
+        #  data_d[v] = data_d[v][:46,:,:] 
+	#  ## JUST DO 2 HOURS FOR NOW FOR TESTING
+        #  #data_d[v] = data_d[v][:2,:,:] 
         data_d[v].fill_value = np.nan
         if '_FillValue' in rootgrp[v].ncattrs():
           fill_d[v] = rootgrp[v].getncattr("_FillValue")

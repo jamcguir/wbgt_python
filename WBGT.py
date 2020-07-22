@@ -253,6 +253,8 @@ temp_RTMA -= t_conv
 dewp_RTMA -= t_conv
 cldc_RTMA = cldc_RTMA/100.0
 
+cldc_NDFD2 = cldc_NDFD2/100.0
+
 temp_mix -= t_conv
 dewp_mix -= t_conv
 cldc_mix = cldc_mix/100.0
