@@ -154,26 +154,26 @@ def file_list(z=6):
     build_data_NBM(nbm_dates, today_d)
 
     # NDFD - Get todays
-    NDFD2_end = datetime.datetime.combine(fivedays_d, z_duration)
-    NDFD2_start = datetime.datetime.combine(today_d, z1_duration)
+    NDFD_end = datetime.datetime.combine(fivedays_d, z_duration)
+    NDFD_start = datetime.datetime.combine(today_d, z1_duration)
 
-    NDFD2_dates = [None]*120
-    NDFD2_dates_int = [None]*120
-    NDFD2_hours = [None]*120
-    NDFD2_files = []
+    NDFD_dates = [None]*64
+    NDFD_dates_int = [None]*64
+    NDFD_hours = [None]*64
+    NDFD_files = []
     n = 0
-    while NDFD2_start + n*step <= NDFD2_end:
-        NDFD2_date = NDFD2_start + n*step
-        NDFD2_dates[n] = NDFD2_date
+    while NDFD_start + n*step <= NDFD_end:
+        NDFD_date = NDFD_start + n*step
+        NDFD_dates[n] = NDFD_date
         # Filepath
-        file_ym =  NDFD2_date.strftime("%Y%m")
-        file_ymd =  NDFD2_date.strftime("%Y%m%d")
-        file_h =  NDFD2_date.strftime("%H")
+        file_ym =  NDFD_date.strftime("%Y%m")
+        file_ymd =  NDFD_date.strftime("%Y%m%d")
+        file_h =  NDFD_date.strftime("%H")
         file_path = "/data/ncep/rtma/"+file_ym+"/"+file_ymd+"/rtma2p5.t"+file_h+"z.2dvaranl_ndfd.grb2"
         # Add to the file list
         files.append({
           'source':'NDFD',
-          'datetime':NDFD2_date,
+          'datetime':NDFD_date,
           'file':file_path,
         })
         n += 1
@@ -208,28 +208,37 @@ def file_timing(z=6):
     RTMA_dates = RTMA_dates[:n]
     RTMA_dates_int = RTMA_dates_int[:n]
 
-    # NDFD
-    NDFD2_end = datetime.datetime.combine(fivedays_d, z_duration)
-    NDFD2_start = datetime.datetime.combine(today_d, z1_duration)
-
-    NDFD2_dates = [None]*120
-    NDFD2_dates_int = [None]*120
-    NDFD2_hours = [None]*120
+    # NDFD/NBM mix
+    # Ok so first 46 iterations are hourly, then the rest are 3 hourly
+    mix_end = datetime.datetime.combine(fivedays_d, z_duration)
+    mix_start = datetime.datetime.combine(today_d, z1_duration)
+    #print(mix_start)
+    #print(mix_end)
+    
+    mix_dates = [None]*64
+    mix_dates_int = [None]*64
+    mix_hours = [None]*64
     n = 0
-    while NDFD2_start + n*step <= NDFD2_end:
-        NDFD2_date = NDFD2_start + n*step
-        NDFD2_dates[n] = NDFD2_date
-        NDFD2_dates_int[n] = NDFD2_date.timetuple().tm_yday
-        NDFD2_hours[n] = NDFD2_date.hour
+    #while mix_start + n*step <= mix_end:
+    while n < 64:
+        #print(n,step)
+        mix_date = mix_start + n*step
+        mix_dates[n] = mix_date
+        mix_dates_int[n] = mix_date.timetuple().tm_yday
+        mix_hours[n] = mix_date.hour
+        
+        # Hourly data becomes 3-hourly data at some point
+        if n > 46:
+        	step = datetime.timedelta(hours = 3)
         n += 1
-    NDFD2_dates = NDFD2_dates[:n]
-    NDFD2_dates_int = NDFD2_dates_int[:n]
+    mix_dates = mix_dates[:n]
+    mix_dates_int = mix_dates_int[:n]
 
-    return RTMA_dates,RTMA_dates_int,RTMA_hours,NDFD2_dates,NDFD2_dates_int,NDFD2_hours
+    return RTMA_dates,RTMA_dates_int,RTMA_hours,mix_dates,mix_dates_int,mix_hours
 
 
 def timing(z=6,nx=370,ny=420,nt=1):
-    RTMA_dates,RTMA_dates_int,RTMA_hours,NDFD2_dates,NDFD2_dates_int,NDFD2_hours =  file_timing(z)
+    RTMA_dates,RTMA_dates_int,RTMA_hours,mix_dates,mix_dates_int,mix_hours =  file_timing(z)
     
     # Convert to 3d grids
     # RTMA
@@ -239,22 +248,22 @@ def timing(z=6,nx=370,ny=420,nt=1):
     jday_RTMA = np.swapaxes(jday_RTMA, 0, 2)
     hour_RTMA = np.swapaxes(hour_RTMA, 0, 2)
 
-    # NDFD
-    nt_ndfd = len(NDFD2_dates_int)
-    jday_NDFD2 = np.broadcast_to(NDFD2_dates_int, (nx,ny,nt_ndfd))
-    hour_NDFD2 = np.broadcast_to(NDFD2_hours, (nx,ny,nt_ndfd))
-    jday_NDFD2 = np.swapaxes(jday_NDFD2, 0, 2)
-    hour_NDFD2 = np.swapaxes(hour_NDFD2, 0, 2)
+    # mix(NDFD/NBM)
+    nt_ndfd = len(mix_dates_int)
+    jday_mix = np.broadcast_to(mix_dates_int, (nx,ny,nt_ndfd))
+    hour_mix = np.broadcast_to(mix_hours, (nx,ny,nt_ndfd))
+    jday_mix = np.swapaxes(jday_mix, 0, 2)
+    hour_mix = np.swapaxes(hour_mix, 0, 2)
 
-    jday_NDFD = np.concatenate((jday_NDFD2[0:36,:,:],
-                                jday_NDFD2[38::3,:,:]),
+    jday_NDFD = np.concatenate((jday_mix[0:36,:,:],
+                                jday_mix[38::3,:,:]),
                                axis=0)
 
-    hour_NDFD = np.concatenate((hour_NDFD2[0:36,:,:],
-                                hour_NDFD2[38::3,:,:]),
+    hour_NDFD = np.concatenate((hour_mix[0:36,:,:],
+                                hour_mix[38::3,:,:]),
                                axis=0)
 
-    return jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_NDFD2, hour_NDFD2
+    return jday_RTMA, hour_RTMA, jday_NDFD, hour_NDFD, jday_mix, hour_mix
 
 #%%% Dimension Imports. Written by JAM Jul 2020
 def import_dims(filename):
@@ -295,7 +304,7 @@ def RTMA_import(filename):
           fill_d[v] = np.nan
     return vars_d, data_d, unit_d, fill_d 
 
-def NDFD2_import(filename):
+def NDFD_import(filename):
     rootgrp = Dataset(filename, "a", format="NETCDF4")
     vs = [*rootgrp.variables.keys()]
     vars_d = dict.fromkeys(vs)
@@ -456,7 +465,7 @@ def data_gen(datatype):
         for key in keys:
             data_out[key] = data_inside
             
-    elif datatype == "NDFD2":
+    elif datatype == "NDFD":
         keys = ["TMP_2maboveground",
                 "DPT_2maboveground",
                 "WIND_10maboveground",

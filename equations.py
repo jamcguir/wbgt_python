@@ -10,30 +10,30 @@ from constants import *
 
 #%% Solar
 def solar_calc(lat_mask_RTMA, lon_mask_RTMA, jday_RTMA_mask, hour_RTMA,
-               lat_mask_NDFD2, lon_mask_NDFD2, jday_NDFD2_mask, hour_NDFD2):    
+               lat_mask_mix, lon_mask_mix, jday_mix_mask, hour_mix):    
     lat_rad_RTMA = (abs(lat_mask_RTMA))*(np.pi/180)
     lon_rad_RTMA =(abs(lon_mask_RTMA-360))*(np.pi/180)
-    lat_rad_NDFD2 = (abs(lat_mask_NDFD2))*(np.pi/180)
-    lon_rad_NDFD2 =(abs(lon_mask_NDFD2-360))*(np.pi/180)
+    lat_rad_mix = (abs(lat_mask_mix))*(np.pi/180)
+    lon_rad_mix =(abs(lon_mask_mix-360))*(np.pi/180)
     
     dec_RTMA = toc_latitude_r*np.cos((2*np.pi*(jday_RTMA_mask-summer_solstice))/days_per_year)    
-    dec_NDFD2 = toc_latitude_r*np.cos((2*np.pi*(jday_NDFD2_mask-summer_solstice))/days_per_year)
+    dec_mix = toc_latitude_r*np.cos((2*np.pi*(jday_mix_mask-summer_solstice))/days_per_year)
     
     hra_RTMA = np.pi*hour_RTMA/12
-    hra_NDFD2 = np.pi*hour_NDFD2/12
+    hra_mix = np.pi*hour_mix/12
     
     elev_RTMA = np.arcsin((np.sin(dec_RTMA)*np.sin(lat_rad_RTMA)) 
                           - (np.cos(dec_RTMA)*np.cos(lat_rad_RTMA)*np.cos(hra_RTMA-lon_rad_RTMA)))
-    elev_NDFD2 = np.arcsin((np.sin(dec_NDFD2)*np.sin(lat_rad_NDFD2)) 
-                           - (np.cos(dec_NDFD2)*np.cos(lat_rad_NDFD2)*np.cos(hra_NDFD2-lon_rad_NDFD2)))
+    elev_mix = np.arcsin((np.sin(dec_mix)*np.sin(lat_rad_mix)) 
+                           - (np.cos(dec_mix)*np.cos(lat_rad_mix)*np.cos(hra_mix-lon_rad_mix)))
     
     zenith_RTMA = 90 - (elev_RTMA*(180/np.pi))
-    zenith_NDFD2 = 90 - (elev_NDFD2*(180/np.pi))
+    zenith_mix = 90 - (elev_mix*(180/np.pi))
 
-    zenith_NDFD = np.concatenate((zenith_NDFD2[0:36,:,:], 
-                                  zenith_NDFD2[38::3,:,:]),
+    zenith_NDFD = np.concatenate((zenith_mix[0:36,:,:], 
+                                  zenith_mix[38::3,:,:]),
                                  axis=0)
-    return zenith_RTMA, zenith_NDFD, zenith_NDFD2
+    return zenith_RTMA, zenith_NDFD, zenith_mix
     
 def rh_calc(temp, dewp):
     ea = (((7.5*dewp)/(237.3+dewp)))     
