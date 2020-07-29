@@ -302,8 +302,8 @@ log.info("Calculate Solar Radiation")
 nght_RTMA = np.where((hour_RTMA <= 10) & (hour_RTMA >= 0), 0, 1)
 nght_mix = np.where((hour_mix <= 10) & (hour_mix >= 0), 0, 1)
 
-print("zenith_rtma=",zenith_RTMA.shape)
-print("elev_rtma=",elev_RTMA.shape)
+#print("zenith_rtma=",zenith_RTMA.shape)
+#print("elev_rtma=",elev_RTMA.shape)
 sr_RTMA = equations.solar_rad(jday_RTMA, hour_RTMA, 
                               lat_RTMA, lon_RTMA, 
                               zenith_RTMA, elev_RTMA)
@@ -315,8 +315,8 @@ shd_RTMA = utilities.srad_bias(sr_RTMA*(1-0.75*(1**3.4)), z=Z)
 act_RTMA = utilities.srad_bias(sr_RTMA*(1-0.75*(np.power(cldc_RTMA, 3.4))), z=Z)
 
 
-print("zenith_ndfd=",zenith_mix.shape)
-print("elev_ndfd=",elev_mix.shape)
+#print("zenith_ndfd=",zenith_mix.shape)
+#print("elev_ndfd=",elev_mix.shape)
 sr_mix = equations.solar_rad(jday_mix, hour_mix, 
                               lat_mix, lon_mix, 
                               zenith_mix, elev_mix)
@@ -325,8 +325,8 @@ sr_mix = np.where(combined_mask, sr_mix, np.nan)*nght_mix
 
 sun_mix = sr_mix
 shd_mix = sr_mix*(1-0.75*(1**3.4))
-print("sr_mix = ",sr_mix.shape)
-print("cldc_mix = ",cldc_mix.shape)
+#print("sr_mix = ",sr_mix.shape)
+#print("cldc_mix = ",cldc_mix.shape)
 act_mix = sr_mix*(1-0.75*(np.power(cldc_mix, 3.4)))
 
 #%%% Morning Shade

@@ -69,7 +69,7 @@ def build_data_NBM(date_list,vdate):
   smallpath = outpath.replace(outfile,"nbm_small.grib2")
   file_list = []
   vdatetime = datetime.datetime(vdate.year, vdate.month, vdate.day, 6)
-  print(vdatetime)
+  #print(vdatetime)
   file_ym =  vdate.strftime("%Y%m")
   file_ymd =  vdate.strftime("%Y%m%d")
   file_h =  vdate.strftime("%H")
@@ -80,7 +80,7 @@ def build_data_NBM(date_list,vdate):
         vdatediff_fhr = str(vdatediff_hr).zfill(3)
         file_ymdh =  tdate.strftime("%Y%m%d%H")
         file_path = "/data/nws/nbm/"+file_ym+"/"+file_ymd+"/06/blend.t06z.master.f"+vdatediff_fhr+".v"+file_ymdh+".co.grib2"
-        print(file_path)
+        #print(file_path)
         if(os.path.isfile(file_path) == True):
           # Add to the file list
           file_list.append(file_path)
@@ -103,10 +103,10 @@ def build_data_NDFD(date_list,vdate):
   outfile = "ndfd.nc"
   outpath = "input/"+outfile
   catpath = outpath.replace(outfile,"ndfd_cat.bin")
-  smallpath = outpath.replace(outfile,"dfd_small.bin")
+  smallpath = outpath.replace(outfile,"ndfd_small.bin")
   file_list = []
   vdatetime = datetime.datetime(vdate.year, vdate.month, vdate.day, 6)
-  print(vdatetime)
+  #print(vdatetime)
   file_ym =  vdate.strftime("%Y%m")
   file_ymd =  vdate.strftime("%Y%m%d")
   file_h =  vdate.strftime("%H")
@@ -116,7 +116,7 @@ def build_data_NDFD(date_list,vdate):
   if(os.path.isfile(file_path) == True):
     cmd_list = [
 	#"/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
-        "/usr/bin/scp "+file_path+" "+smallpath+"",
+        "/usr/bin/scp "+file_path+" "+catpath+"",
         #"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"", #NC/VA
 	"/usr/local/bin/wgrib2 "+catpath+" -small_grib 271.5:285.8117 25.5:40.3277 "+smallpath+"", # SERCC
 	"/usr/local/bin/wgrib2 "+smallpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+smallpath+" -netcdf "+outfile+"",
@@ -426,8 +426,8 @@ def RTMA_bias(data_RTMA, z):
             "srad_bias": np.array([0,0,0,0.13,21.51,90.23,82.56,35.49,-24.2,-87.89,-160.95,-229.6,-272.25,-287.4,-271.61,-221.73,-154.68,-68.81,-1.86,0.08,0,0,0,0,0])
             }
     ntime = data_RTMA["TMP_2maboveground"].shape[0]
-    print("ntime for RTMA = ",ntime)
-    #print(data_RTMA["TMP_2maboveground"][0,100,100])
+    #print("ntime for RTMA = ",ntime)
+    ##print(data_RTMA["TMP_2maboveground"][0,100,100])
     for i in range(0, ntime):  
         data_RTMA["TMP_2maboveground"][i,:,:] = data_RTMA["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
         data_RTMA["DPT_2maboveground"][i,:,:] = data_RTMA["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
@@ -444,13 +444,13 @@ def NDFD_bias(data_NDFD, z):
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-103.1,-78.9,-34.1,22.9,76.8,133,182.1,189.5,179.9,139.5,91.5,29.5])
         }
     ntime = data_NDFD["TMP_2maboveground"].shape[0]
-    print("ntime for NDFD = ",ntime)
-    print(data_NDFD["TMP_2maboveground"][0,100,100])
+    #print("ntime for NDFD = ",ntime)
+    #print(data_NDFD["TMP_2maboveground"][0,100,100])
     for i in range(0, ntime):  
         data_NDFD["TMP_2maboveground"][i,:,:] = data_NDFD["TMP_2maboveground"][i,:,:] + bias_table["temp_bias"][i]
         data_NDFD["DPT_2maboveground"][i,:,:] = data_NDFD["DPT_2maboveground"][i,:,:] + bias_table["dew_bias"][i]
         data_NDFD["WIND_10maboveground"][i,:,:] = data_NDFD["WIND_10maboveground"][i,:,:] + bias_table["wind_bias"][i]
-    print(data_NDFD["TMP_2maboveground"][0,100,100])
+    #print(data_NDFD["TMP_2maboveground"][0,100,100])
     return data_NDFD
 
 def NBM_bias(data_NBM, z):
@@ -462,8 +462,8 @@ def NBM_bias(data_NBM, z):
         "srad_bias": np.array([0.2,-0.2,0,0,0,0,0,0,0,0,-8,-64.1,-101.7,-74.1,-23.1,39.7,99,155.5,197.2,208,193.6,150.5,95.8,30.5])
         }
     ntime = data_NBM["TMP_2maboveground"].shape[0]
-    print("ntime for NBM = ",ntime)
-    print(data_NBM["TMP_2maboveground"][:,0,0])
+    #print("ntime for NBM = ",ntime)
+    #print(data_NBM["TMP_2maboveground"][:,0,0])
     times = data_NBM["TMP_2maboveground"][:,0,0]
     #for i,t in enumerate(times):  
     for i in range(0, ntime):  
