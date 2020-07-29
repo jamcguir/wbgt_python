@@ -20,16 +20,23 @@ log = logging.getLogger(__name__)
 
 from netCDF4 import Dataset
 
+#%% Setup
+#%%% Logging
+log = logging.getLogger(__name__)
+log_format = "%(levelname)-7.7s - %(message)-60s\t - [%(lineno)d] %(module)s.%(funcName)s"
+logging.basicConfig(level=logging.INFO, format=log_format)
+
+#%%% Development
+
 # Function to build data
 # written by JAM July 2020
-def build_data(date):
-  print("Stuff goes here")
 
 def build_data_RTMA(date_list,vdate):
-  outfile = "rtma.nc4"
+  log.info("Building RTMA dataset")
+  outfile = "rtma.nc"
   outpath = "input/"+outfile
-  catpath = outfile.replace(outfile,"rtma_cat.grib2")
-  smallpath = outfile.replace(outfile,"rtma_small.grib2")
+  catpath = outpath.replace(outfile,"rtma_cat.grib2")
+  smallpath = outpath.replace(outfile,"rtma_small.grib2")
   file_list = []
   for tdate in date_list:
 	# Filepath
@@ -42,8 +49,9 @@ def build_data_RTMA(date_list,vdate):
           file_list.append(file_path)
   cmd_list = [
 	"/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
-	"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"",
-	"/usr/local/bin/wgrib2 "+smallpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+smallpath+" -netcdf "+outfile+"",
+	#"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"", # NC/VA
+        "/usr/local/bin/wgrib2 "+catpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+catpath+"  -small_grib 271.5:285.8117 25.5:40.3277 "+smallpath+"",
+        "wgrib2 "+smallpath+" -netcdf "+outpath+"",
 	"rm -rf "+catpath+" "+smallpath+"",
   ]
   for cmd in cmd_list:
@@ -55,10 +63,10 @@ def build_data_RTMA(date_list,vdate):
   return outfile
 
 def build_data_NBM(date_list,vdate):
-  outfile = "nbm.nc4"
+  outfile = "nbm.nc"
   outpath = "input/"+outfile
-  catpath = outfile.replace(outfile,"nbm_cat.grib2")
-  smallpath = outfile.replace(outfile,"nbm_small.grib2")
+  catpath = outpath.replace(outfile,"nbm_cat.grib2")
+  smallpath = outpath.replace(outfile,"nbm_small.grib2")
   file_list = []
   vdatetime = datetime.datetime(vdate.year, vdate.month, vdate.day, 6)
   print(vdatetime)
@@ -71,23 +79,54 @@ def build_data_NBM(date_list,vdate):
         vdatediff_hr = int(divmod(vdatediff.total_seconds(),3600)[0])
         vdatediff_fhr = str(vdatediff_hr).zfill(3)
         file_ymdh =  tdate.strftime("%Y%m%d%H")
-        print(vdatediff_fhr)
         file_path = "/data/nws/nbm/"+file_ym+"/"+file_ymd+"/06/blend.t06z.master.f"+vdatediff_fhr+".v"+file_ymdh+".co.grib2"
+        print(file_path)
         if(os.path.isfile(file_path) == True):
           # Add to the file list
           file_list.append(file_path)
 
   cmd_list = [
-	"/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
-	"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"",
-	"/usr/local/bin/wgrib2 "+smallpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+smallpath+" -netcdf "+outfile+"",
-	"rm -rf "+catpath+" "+smallpath+"",
+        "/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
+        "/usr/local/bin/wgrib2 "+catpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+catpath+"  -small_grib 271.5:285.8117 25.5:40.3277 "+smallpath+"",
+        "wgrib2 "+smallpath+" -netcdf "+outpath+"",
+        "rm -rf "+catpath+" "+smallpath+"",
   ]
   for cmd in cmd_list:
     print(cmd)
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     process.wait()
     print(process.returncode)
+
+  return outfile
+
+def build_data_NDFD(date_list,vdate):
+  outfile = "ndfd.nc"
+  outpath = "input/"+outfile
+  catpath = outpath.replace(outfile,"ndfd_cat.bin")
+  smallpath = outpath.replace(outfile,"dfd_small.bin")
+  file_list = []
+  vdatetime = datetime.datetime(vdate.year, vdate.month, vdate.day, 6)
+  print(vdatetime)
+  file_ym =  vdate.strftime("%Y%m")
+  file_ymd =  vdate.strftime("%Y%m%d")
+  file_h =  vdate.strftime("%H")
+  file_ymdh =  vdate.strftime("%Y%m%d%H")
+  #scp -pr /data/nws/ndfd/202007/20200720/2020072006ds.conus.oper.bin input/ndfd.bin
+  file_path = "/data/nws/ndfd/"+file_ym+"/"+file_ymd+"/"+file_ymdh+"ds.conus.oper.bin"
+  if(os.path.isfile(file_path) == True):
+    cmd_list = [
+	#"/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
+        "/usr/bin/scp "+file_path+" "+smallpath+"",
+        #"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"", #NC/VA
+	"/usr/local/bin/wgrib2 "+catpath+" -small_grib 271.5:285.8117 25.5:40.3277 "+smallpath+"", # SERCC
+	"/usr/local/bin/wgrib2 "+smallpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+smallpath+" -netcdf "+outfile+"",
+        "rm -rf "+catpath+" "+smallpath+"",
+  ]
+    for cmd in cmd_list:
+      print(cmd)
+      process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+      process.wait()
+      print(process.returncode)
 
   return outfile
 
@@ -113,9 +152,9 @@ def to_state(gdf, statelist=["North Carolina"]):
         log.debug("Finished processing {}".format(statelabels[row]))
     return statemasks, statelabels, states
 
-def file_list(z=6):
+def build_input_data(vdate, z=6):
     log.debug("Processing timing for z={}".format(z))
-    today_dt = datetime.datetime.utcnow()
+    today_dt = vdate
     today_d = today_dt.date()                                                                                                                                                                                                               
     yesterday_d = today_dt.date() - datetime.timedelta(days=1)
     fivedays_d = today_dt.date() + datetime.timedelta(days=5)
@@ -137,7 +176,9 @@ def file_list(z=6):
         n += 1
 
     # Generate
-    #build_data_RTMA(rtma_dates, today_d)
+    log.info("Generate RTMA input files")
+    build_data_RTMA(rtma_dates, today_d)
+    log.info("Done with RTMA input files")
 
     # NBM
     NBM_end = datetime.datetime.combine(fivedays_d, z_duration)
@@ -151,32 +192,22 @@ def file_list(z=6):
         n += 1
 
     # Generate
+    log.info("Generate NBM input files")
     build_data_NBM(nbm_dates, today_d)
+    log.info("Done with NBM input files")
 
     # NDFD - Get todays
     NDFD_end = datetime.datetime.combine(fivedays_d, z_duration)
     NDFD_start = datetime.datetime.combine(today_d, z1_duration)
+ 
+    ndfd_dates = []
+    NDFD_date = NDFD_start
+    ndfd_dates.append(NDFD_date)
 
-    NDFD_dates = [None]*64
-    NDFD_dates_int = [None]*64
-    NDFD_hours = [None]*64
-    NDFD_files = []
-    n = 0
-    while NDFD_start + n*step <= NDFD_end:
-        NDFD_date = NDFD_start + n*step
-        NDFD_dates[n] = NDFD_date
-        # Filepath
-        file_ym =  NDFD_date.strftime("%Y%m")
-        file_ymd =  NDFD_date.strftime("%Y%m%d")
-        file_h =  NDFD_date.strftime("%H")
-        file_path = "/data/ncep/rtma/"+file_ym+"/"+file_ymd+"/rtma2p5.t"+file_h+"z.2dvaranl_ndfd.grb2"
-        # Add to the file list
-        files.append({
-          'source':'NDFD',
-          'datetime':NDFD_date,
-          'file':file_path,
-        })
-        n += 1
+    # Generate
+    log.info("Generate NDFD input files")
+    build_data_NDFD(nbm_dates, today_d)
+    log.info("Done with NDFD input files")
 
     return files
 
@@ -273,6 +304,13 @@ def import_dims(filename):
     nt = infile.dimensions['time'].size
     infile.close()
     return nx, ny, nt
+
+def import_latlon(filename):
+    infile = Dataset(filename, "a", format="NETCDF4")
+    lat_var = infile['latitude'][:]
+    lon_var = infile['longitude'][:]
+    infile.close()
+    return lat_var,lon_var
 
 def import_times(filename):
     infile = Dataset(filename, "a", format="NETCDF4")

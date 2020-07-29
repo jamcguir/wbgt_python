@@ -8,6 +8,7 @@
 import logging
 import utilities
 import equations
+import datetime
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -29,13 +30,20 @@ Z = 6
 statelist = ["North Carolina", "Virginia"]
 
 # Get the file list
-#files = utilities.file_list(Z)
+#vdate = datetime.datetime.utcnow()
+vdate = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+vdate_ymd =  vdate.strftime("%Y%m%d")
+log.info("Generate files")#files = utilities.build_input_data(vdate, Z)
+files = utilities.build_input_data(vdate, Z)
+log.info("Done generate files")#files = utilities.build_input_data(vdate, Z)
 
 # File input
 nx,ny,nt = utilities.import_dims("input/rtma.nc")
 vtime_rtma,times_rtma = utilities.import_times("input/rtma.nc")
 vtime_ndfd,times_ndfd = utilities.import_times("input/ndfd.nc")
 vtime_nbm,times_nbm = utilities.import_times("input/nbm.nc")
+
+lat_array,lon_array =  utilities.import_latlon("input/rtma.nc")
 
 # The Mixture Configuration is as follows:
 #
@@ -69,18 +77,18 @@ times_source = np.hstack((source_rtma, source_mix))
 #print(times_source)
 
 #%%% Longitude and Latitude 
-log.info("Longitude and Latitude")
-with open("resources/lonlat.csv") as read_file:
-    lonlat = pd.read_csv(read_file)
-#print(nx,ny,nt)
-#quit()
-
-# Set up arrays for both longitude and latitude
-lon = lonlat.lon.to_numpy()
-lon_array = lon.reshape(1,ny,nx)
-
-lat = lonlat.lat.to_numpy()
-lat_array = lat.reshape(1,ny,nx)
+#log.info("Longitude and Latitude")
+#with open("resources/lonlat.csv") as read_file:
+#    lonlat = pd.read_csv(read_file)
+##print(nx,ny,nt)
+##quit()
+#
+## Set up arrays for both longitude and latitude
+#lon = lonlat.lon.to_numpy()
+#lon_array = lon.reshape(1,ny,nx)
+#
+#lat = lonlat.lat.to_numpy()
+#lat_array = lat.reshape(1,ny,nx)
 
 # Create "stacked" arrays spanning across time scales
 lon_RTMA = np.repeat(lon_array, len(times_rtma), axis=0)
@@ -92,25 +100,25 @@ lat_NDFD = np.repeat(lat_array, len(times_ndfd), axis=0)
 lon_mix = np.repeat(lon_array, len(times_mix), axis=0)
 lat_mix = np.repeat(lat_array, len(times_mix), axis=0)
 
-# Create GeoPandas DataFrame containing latitude and longitude
-gdf = gpd.GeoDataFrame(lonlat, 
-                       geometry=gpd.points_from_xy(lonlat.lon-360, lonlat.lat))
-
-#%%% Region Masking
-log.info("Region Masking")
-statemasks, statelabels, states = utilities.to_state(gdf, statelist=statelist)
-
-dimmasks = [None]*len(statemasks)
-combined_mask = np.full((1,ny,nx), False)
-for row in range(0, len(statemasks)):
-    statemask = statemasks[row]
-    mask = statemask.to_numpy()
-    dimmasks[row] = mask.reshape(1,ny,nx)
-    combined_mask = np.logical_or(combined_mask, dimmasks[row])
-
-# Keeping mask because elevation data does not encompass entire model domain
-#log.info("DO NOT Mask Application")
-#combined_mask = np.full((1,ny,nx), True)
+## Create GeoPandas DataFrame containing latitude and longitude
+#gdf = gpd.GeoDataFrame(lonlat, 
+#                       geometry=gpd.points_from_xy(lonlat.lon-360, lonlat.lat))
+#
+##%%% Region Masking
+#log.info("Region Masking")
+#statemasks, statelabels, states = utilities.to_state(gdf, statelist=statelist)
+#
+#dimmasks = [None]*len(statemasks)
+#combined_mask = np.full((1,ny,nx), False)
+#for row in range(0, len(statemasks)):
+#    statemask = statemasks[row]
+#    mask = statemask.to_numpy()
+#    dimmasks[row] = mask.reshape(1,ny,nx)
+#    combined_mask = np.logical_or(combined_mask, dimmasks[row])
+#
+## Keeping mask because elevation data does not encompass entire model domain
+log.info("DO NOT Mask Application")
+combined_mask = np.full((1,ny,nx), True)
 
 #%%% Mask Application
 log.info("Mask Application")
@@ -184,7 +192,8 @@ elif TESTMODE:
     data_NBM = utilities.data_gen("NBM")
 
 # get the elevation data
-vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_NCVA.nc")
+#vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_NCVA.nc")
+vars_elev, data_elev = utilities.small_import("resources/elevation_sercc.nc")
 
 ##%%% RTMA Bias Correction
 log.info("SERCC's RTMA Bias Correction")
@@ -437,7 +446,8 @@ WBGT_actual = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_mix*(9/5)+32), ax
 
 #%%% Export Wet Bulb Globe Temperature
 log.info("Export NetCDF Version 4")
-outfile = Dataset("out_wbgt.nc4", "w", format="NETCDF4")
+outfilename = "wbgt_"+vdate_ymd+".nc4"
+outfile = Dataset(outfilename, "w", format="NETCDF4")
 
 #outfile.title = 'Wet Bulb Globe Temperature (WBGT) forecast using RTMA, NDFD, and NBM. Written for SERCC by NC SCO'
 outfile.institution = "Southeast Regional Climate Center"
