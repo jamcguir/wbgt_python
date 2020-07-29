@@ -30,10 +30,12 @@ Z = 6
 statelist = ["North Carolina", "Virginia"]
 
 # Get the file list
-#vdate = datetime.datetime.utcnow()
-vdate = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+vdate = datetime.datetime.utcnow()
+if(vdate.hour <= 6):
+  vdate = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+print(vdate)
 vdate_ymd =  vdate.strftime("%Y%m%d")
-log.info("Generate files")#files = utilities.build_input_data(vdate, Z)
+log.info("Generate files for"+vdate_ymd)#files = utilities.build_input_data(vdate, Z)
 files = utilities.build_input_data(vdate, Z)
 log.info("Done generate files")#files = utilities.build_input_data(vdate, Z)
 

@@ -119,7 +119,7 @@ def build_data_NDFD(date_list,vdate):
         "/usr/bin/scp "+file_path+" "+catpath+"",
         #"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"", #NC/VA
 	"/usr/local/bin/wgrib2 "+catpath+" -small_grib 271.5:285.8117 25.5:40.3277 "+smallpath+"", # SERCC
-	"/usr/local/bin/wgrib2 "+smallpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+smallpath+" -netcdf "+outfile+"",
+	"/usr/local/bin/wgrib2 "+smallpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+smallpath+" -netcdf "+outpath+"",
         "rm -rf "+catpath+" "+smallpath+"",
   ]
     for cmd in cmd_list:
