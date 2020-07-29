@@ -51,7 +51,7 @@ def build_data_RTMA(date_list,vdate):
 	"/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
 	#"/usr/local/bin/wgrib2 "+catpath+" -small_grib 275.0609:285.8117 32.98101:40.3277 "+smallpath+"", # NC/VA
         "/usr/local/bin/wgrib2 "+catpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+catpath+"  -small_grib 271.5:285.8117 25.5:40.3277 "+smallpath+"",
-        "wgrib2 "+smallpath+" -netcdf "+outpath+"",
+        "/usr/local/bin/wgrib2 "+smallpath+" -netcdf "+outpath+"",
 	"rm -rf "+catpath+" "+smallpath+"",
   ]
   for cmd in cmd_list:
@@ -88,7 +88,7 @@ def build_data_NBM(date_list,vdate):
   cmd_list = [
         "/usr/bin/cat "+" ".join(file_list)+" > "+catpath+"",
         "/usr/local/bin/wgrib2 "+catpath+" -s | /usr/bin/egrep '(:TMP:2|:DPT:2|:TCDC:|:WIND:10)' | /usr/local/bin/wgrib2 -i "+catpath+"  -small_grib 271.5:285.8117 25.5:40.3277 "+smallpath+"",
-        "wgrib2 "+smallpath+" -netcdf "+outpath+"",
+        "/usr/local/bin/wgrib2 "+smallpath+" -netcdf "+outpath+"",
         "rm -rf "+catpath+" "+smallpath+"",
   ]
   for cmd in cmd_list:
