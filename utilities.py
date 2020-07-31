@@ -107,10 +107,10 @@ def build_data_NDFD(date_list,vdate):
   file_list = []
   vdatetime = datetime.datetime(vdate.year, vdate.month, vdate.day, 6)
   #print(vdatetime)
-  file_ym =  vdate.strftime("%Y%m")
-  file_ymd =  vdate.strftime("%Y%m%d")
-  file_h =  vdate.strftime("%H")
-  file_ymdh =  vdate.strftime("%Y%m%d%H")
+  file_ym =  vdatetime.strftime("%Y%m")
+  file_ymd =  vdatetime.strftime("%Y%m%d")
+  file_h =  vdatetime.strftime("%H")
+  file_ymdh =  vdatetime.strftime("%Y%m%d%H")
   #scp -pr /data/nws/ndfd/202007/20200720/2020072006ds.conus.oper.bin input/ndfd.bin
   file_path = "/data/nws/ndfd/"+file_ym+"/"+file_ymd+"/"+file_ymdh+"ds.conus.oper.bin"
   if(os.path.isfile(file_path) == True):

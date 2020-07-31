@@ -30,12 +30,18 @@ Z = 6
 statelist = ["North Carolina", "Virginia"]
 
 # Get the file list
-vdate = datetime.datetime.utcnow()
-if(vdate.hour <= 6):
-  vdate = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-print(vdate)
+vdatenow = datetime.datetime.utcnow()
+vdatetime = datetime.datetime(vdatenow.year, vdatenow.month, vdatenow.day, Z)
+
+if(vdatetime <= vdatenow):
+  vdate = vdatetime
+else:
+  vdatetime = vdatenow - datetime.timedelta(days=1)
+  vdate = vdatetime
+  #vdate = vdate - datetime.timedelta(days=1)
 vdate_ymd =  vdate.strftime("%Y%m%d")
-log.info("Generate files for"+vdate_ymd)#files = utilities.build_input_data(vdate, Z)
+vdate_ymdh =  vdate.strftime("%Y%m%d%H")
+log.info("Generate files for"+vdate_ymdh)#files = utilities.build_input_data(vdate, Z)
 files = utilities.build_input_data(vdate, Z)
 log.info("Done generate files")#files = utilities.build_input_data(vdate, Z)
 
@@ -446,9 +452,11 @@ WBGT_sun = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_mix*(9/5)+32), axis=
 WBGT_shade = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_mix*(9/5)+32), axis=0)
 WBGT_actual = np.concatenate((WBGT_sun_RTMA*(9/5)+32, WBGT_sun_mix*(9/5)+32), axis=0)
 
+WBGT_airtemp = np.concatenate((temp_RTMA*(9/5)+32, temp_mix*(9/5)+32), axis=0)
+
 #%%% Export Wet Bulb Globe Temperature
 log.info("Export NetCDF Version 4")
-outfilename = "wbgt_"+vdate_ymd+".nc4"
+outfilename = "wbgt_"+vdate_ymdh+".nc4"
 outfile = Dataset(outfilename, "w", format="NETCDF4")
 
 #outfile.title = 'Wet Bulb Globe Temperature (WBGT) forecast using RTMA, NDFD, and NBM. Written for SERCC by NC SCO'
@@ -511,6 +519,19 @@ out_source.setncatts({
 out_source[:]=times_source[:]
 
 # create latitude axis
+
+# Add the air temp
+log.info("Writing out air temp to file")
+WBGT_airtemp_var = outfile.createVariable("airtemp","f8",('t','y','x'),zlib=True)
+WBGT_airtemp_var.setncatts({
+                    'long_name': u"Air Temperature",\
+                    'units': u"degF", 'level_desc': u'Surface',\
+                    'var_desc': u"Air Temperature",\
+                    'coordinates':u'latitude longitude',\
+                    'level_desc':u"Surface",\
+                    'min': 0,\
+})
+WBGT_airtemp_var[:,:,:] = WBGT_airtemp[:,:,:]
 
 # Add the WBGT_SUN
 log.info("Writing out WBGT Sun to file")
