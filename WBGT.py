@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.INFO, format=log_format)
 #%%% Development
 #TESTMODE = True
 TESTMODE = False
+DEBUGMODE = False
 np.warnings.filterwarnings('ignore')
 
 #%%% Constants
@@ -36,11 +37,13 @@ vdatetime = datetime.datetime(vdatenow.year, vdatenow.month, vdatenow.day, Z)
 if(vdatetime <= vdatenow):
   vdate = vdatetime
 else:
-  vdatetime = vdatenow - datetime.timedelta(days=1)
+  vdatetime = vdatetime - datetime.timedelta(days=1)
   vdate = vdatetime
   #vdate = vdate - datetime.timedelta(days=1)
 vdate_ymd =  vdate.strftime("%Y%m%d")
 vdate_ymdh =  vdate.strftime("%Y%m%d%H")
+
+# Generate the files
 log.info("Generate files for"+vdate_ymdh)#files = utilities.build_input_data(vdate, Z)
 files = utilities.build_input_data(vdate, Z)
 log.info("Done generate files")#files = utilities.build_input_data(vdate, Z)
@@ -176,6 +179,12 @@ zenith_RTMA, zenith_NDFD, zenith_mix = equations.solar_calc(lat_mask_RTMA,
 #hour_mix = hour_mix[:2,:,:]
 #zenith_mix = zenith_mix[:2,:,:]
 
+if DEBUGMODE:
+  print("jday_RTMA: ",jday_RTMA[:,300,300])
+  print("jday_RTMA_mask: ",jday_RTMA_mask[:,300,300])
+  print("hour_RTMA: ",hour_RTMA[:,300,300])
+  print("zenith_RTMA: ",zenith_RTMA[:,300,300])
+
 #%% Data Imports
 log.info("Data Loading")
 if not TESTMODE:
@@ -201,7 +210,11 @@ elif TESTMODE:
 
 # get the elevation data
 #vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_NCVA.nc")
-vars_elev, data_elev = utilities.small_import("resources/elevation_sercc.nc")
+vars_elev, data_elev = utilities.small_import("resources/elevation_regrid_sercc.nc")
+elev_var = data_elev["var"]
+if DEBUGMODE:
+  print("data_elev: ",elev_var.shape)
+  print("data_elev: ",elev_var[300,300])
 
 ##%%% RTMA Bias Correction
 log.info("SERCC's RTMA Bias Correction")
@@ -251,6 +264,8 @@ elev = np.atleast_3d(data_elev["var"])
 # Get the elevation
 elev = np.swapaxes(elev, 0, 1)
 elev = np.swapaxes(elev, 0, 2)
+#print(elev.shape)
+#print("elev: ",elev[0,:,300])
 
 ##%%% Combine NDFD and NBM
 log.info("Combine NDFD and NBM datasets")
@@ -310,21 +325,36 @@ log.info("Calculate Solar Radiation")
 nght_RTMA = np.where((hour_RTMA <= 10) & (hour_RTMA >= 0), 0, 1)
 nght_mix = np.where((hour_mix <= 10) & (hour_mix >= 0), 0, 1)
 
+#print("nght_RTMA: ",nght_RTMA[:,300,300])
 #print("zenith_rtma=",zenith_RTMA.shape)
 #print("elev_rtma=",elev_RTMA.shape)
+
+if DEBUGMODE:
+  print("lat_RTMA: ",lat_RTMA[300,300])
+  print("lon_RTMA: ",lon_RTMA[300,300])
+  print("zenith_RTMA: ",zenith_RTMA[:,300,300])
+  print("elev_RTMA: ",elev_RTMA[:,300,300])
+  print("jday_RTMA: ",jday_RTMA[:,300,300])
+  print("hour_RTMA: ",hour_RTMA[:,300,300])
+
+#%% Data Imports
+
+#
+# ISSUE IS HERE
+#
 sr_RTMA = equations.solar_rad(jday_RTMA, hour_RTMA, 
                               lat_RTMA, lon_RTMA, 
                               zenith_RTMA, elev_RTMA)
 
 sr_RTMA = np.where(combined_mask, sr_RTMA, np.nan)*nght_RTMA
+if DEBUGMODE:
+  print("sr_RTMA: ",sr_RTMA[:,300,300])
 
 sun_RTMA = utilities.srad_bias(sr_RTMA, z=Z)
 shd_RTMA = utilities.srad_bias(sr_RTMA*(1-0.75*(1**3.4)), z=Z)
 act_RTMA = utilities.srad_bias(sr_RTMA*(1-0.75*(np.power(cldc_RTMA, 3.4))), z=Z)
 
 
-#print("zenith_ndfd=",zenith_mix.shape)
-#print("elev_ndfd=",elev_mix.shape)
 sr_mix = equations.solar_rad(jday_mix, hour_mix, 
                               lat_mix, lon_mix, 
                               zenith_mix, elev_mix)
@@ -343,6 +373,8 @@ mshd_RTMA = np.where((hour_RTMA >= 10) & (hour_RTMA <= 14), True, False)
 mshd_mix = np.where((hour_mix >= 10) & (hour_mix <= 14), True, False)
 
 sun_RTMA = np.where(mshd_RTMA, shd_RTMA, sun_RTMA)
+if DEBUGMODE:
+  print("sun_RTMA: ",sun_RTMA[:,300,300])
 act_RTMA = np.where(mshd_RTMA, shd_RTMA, act_RTMA)
 
 sun_mix = np.where(mshd_mix, shd_mix, sun_mix)
@@ -351,6 +383,8 @@ act_mix = np.where(mshd_mix, shd_mix, act_mix)
 #%%% Theoretical Maximum Solar Radiation
 log.info("Calculate Maximum Solar Radiation")
 smax_RTMA = equations.solar_max(jday_RTMA_mask, zenith_RTMA)
+if DEBUGMODE:
+  print("smax_RTMA: ",smax_RTMA[:,300,300])
 smax_mix = equations.solar_max(jday_mix_mask, zenith_mix)
 
 sun_RTMA = np.where(sun_RTMA >= smax_RTMA, smax_RTMA, sun_RTMA)
@@ -368,6 +402,7 @@ staract_RTMA = act_RTMA/smax_RTMA
 starsun_mix = sun_mix/smax_mix
 starshd_mix = shd_mix/smax_mix
 staract_mix = act_mix/smax_mix
+
 
 #%%% Diffuse and Direct Solar Radiation
 log.info("Calculate Diffuse and Direct Solar Radiation")
@@ -409,26 +444,36 @@ rad_mix = np.where(nght_mix == 0, 1, 0)
 #%%% Calculate Wet Bulb Temperature
 log.info("Calculate Wet Bulb Temperature for RTMA Dataset")
 twb_sun_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
-#print(twb_sun_RTMA[0,180:250,100])
+if DEBUGMODE:
+  print("dewp_RTMA: ",dewp_RTMA[:,300,300])
+  print("rh_RTMA: ",rh_RTMA[:,300,300])
+  print("est_speed_sun_RTMA: ",est_speed_sun_RTMA[:,300,300])
+  print("sun_RTMA: ",sun_RTMA[:,300,300])
+  print("fdb_sun_RTMA: ",fdb_sun_RTMA[:,300,300])
+  print("zenith_RTMA: ",zenith_RTMA[:,300,300])
+  print("rad_RTMA: ",rad_RTMA[:,300,300])
 twb_shade_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 twb_actual_RTMA = equations.twb(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, np.cos(zenith_RTMA*np.pi/180), rad_RTMA)
 
 log.info("Calculate Wet Bulb Temperature for mix Dataset")
 twb_sun_mix = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_sun_mix, sun_mix, fdb_sun_mix, np.cos(zenith_mix*np.pi/180), rad_mix)
-#print(twb_sun_mix[0,180:250,100])
+if DEBUGMODE:
+  print(twb_sun_mix[:,300,300])
 twb_shade_mix = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_shd_mix, shd_mix, fdb_shd_mix, np.cos(zenith_mix*np.pi/180), rad_mix)
 twb_actual_mix = equations.twb(temp_mix, dewp_mix, rh_mix, est_speed_act_mix, act_mix, fdb_act_mix, np.cos(zenith_mix*np.pi/180), rad_mix)
 
 #%%% Calculate Wet Globe Temperature
 log.info("Calculate Wet Globe Temperature for RTMA Dataset")
 tglobe_sun_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_sun_RTMA, sun_RTMA, fdb_sun_RTMA, np.cos(zenith_RTMA*np.pi/180))
-#print(tglobe_sun_RTMA[0,180:250,100])
+if DEBUGMODE:
+  print(tglobe_sun_RTMA[:,300,300])
 tglobe_shade_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_shd_RTMA, shd_RTMA, fdb_shd_RTMA, zenith_RTMA*np.pi/180)
 tglobe_actual_RTMA = equations.tglobe(temp_RTMA, dewp_RTMA, rh_RTMA, est_speed_act_RTMA, act_RTMA, fdb_act_RTMA, zenith_RTMA*np.pi/180)
 
 log.info("Calculate Wet Globe Temperature for mix Dataset")
 tglobe_sun_mix = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_sun_mix, sun_mix, fdb_sun_mix, zenith_mix*np.pi/180)
-#print(tglobe_sun_mix[0,180:250,100])
+if DEBUGMODE:
+  print(tglobe_sun_mix[:,300,300])
 tglobe_shade_mix = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_shd_mix, shd_mix, fdb_shd_mix, zenith_mix*np.pi/180)
 tglobe_actual_mix = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_act_mix, act_mix, fdb_act_mix, zenith_mix*np.pi/180)
 
@@ -436,13 +481,15 @@ tglobe_actual_mix = equations.tglobe(temp_mix, dewp_mix, rh_mix, est_speed_act_m
 #%%% Calculate Wet Bulb Globe Temperature
 log.info("Combine Wet Bulb and Wet Globe Temperature for RTMA Dataset")
 WBGT_sun_RTMA = 0.7*twb_sun_RTMA + 0.2*tglobe_sun_RTMA + 0.1*temp_RTMA
-#print(WBGT_sun_RTMA[0,180:250,100])
+if DEBUGMODE:
+  print(WBGT_sun_RTMA[:,300,300])
 WBGT_shade_RTMA = 0.7*twb_shade_RTMA + 0.2*tglobe_shade_RTMA + 0.1*temp_RTMA
 WBGT_actual_RTMA = 0.7*twb_actual_RTMA + 0.2*tglobe_actual_RTMA + 0.1*temp_RTMA
 
 log.info("Combine Wet Bulb and Wet Globe Temperature for mix Dataset")
 WBGT_sun_mix = 0.7*twb_sun_mix + 0.2*tglobe_sun_mix + 0.1*temp_mix
-#print(WBGT_sun_mix[0,180:250,100])
+if DEBUGMODE:
+  print(WBGT_sun_mix[:,300,300])
 WBGT_shade_mix = 0.7*twb_shade_mix + 0.2*tglobe_shade_mix + 0.1*temp_mix
 WBGT_actual_mix = 0.7*twb_actual_mix + 0.2*tglobe_actual_mix + 0.1*temp_mix
 
@@ -521,17 +568,17 @@ out_source[:]=times_source[:]
 # create latitude axis
 
 # Add the air temp
-log.info("Writing out air temp to file")
-WBGT_airtemp_var = outfile.createVariable("airtemp","f8",('t','y','x'),zlib=True)
-WBGT_airtemp_var.setncatts({
-                    'long_name': u"Air Temperature",\
-                    'units': u"degF", 'level_desc': u'Surface',\
-                    'var_desc': u"Air Temperature",\
-                    'coordinates':u'latitude longitude',\
-                    'level_desc':u"Surface",\
-                    'min': 0,\
-})
-WBGT_airtemp_var[:,:,:] = WBGT_airtemp[:,:,:]
+#log.info("Writing out air temp to file")
+#WBGT_airtemp_var = outfile.createVariable("airtemp","f8",('t','y','x'),zlib=True)
+#WBGT_airtemp_var.setncatts({
+#                    'long_name': u"Air Temperature",\
+#                    'units': u"degF", 'level_desc': u'Surface',\
+#                    'var_desc': u"Air Temperature",\
+#                    'coordinates':u'latitude longitude',\
+#                    'level_desc':u"Surface",\
+#                    'min': 0,\
+#})
+#WBGT_airtemp_var[:,:,:] = WBGT_airtemp[:,:,:]
 
 # Add the WBGT_SUN
 log.info("Writing out WBGT Sun to file")

@@ -12,14 +12,17 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/esmf/ESMF_regridding.ncl"
 ;Refer to regridding google doc if need help understanding process
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-f = addfile("/data/sco/wbgt_python/resources/elevation.nc4", "r")
-elev = f->Band1
+;f = addfile("/data/sco/wbgt_python/resources/elevation.nc4", "r")
+;elev = f->Band1
+; NLDAS
+f = addfile("/data/sco/wbgt_python/resources/NLDAS_elevation.nc4", "r")
+elev = f->NLDAS_elev
 lat = f->lat
 lon = f->lon
 
 printVarSummary(elev)
 
-elev_extract = elev({25.5:40.3277},{-88.5:-74.1883})   ;SE US
+elev_extract = elev(0,{25.5:40.3277},{-88.5:-74.1883})   ;SE US
 ;elev_extract = elev({33.8189:39.5453},{-84.401:-75.2297})   ;all of NC & VA
 ;elev_extract = elev({33.8189:38.0664},{-84.401:-75.4563})  ;up to Charlottesville, VA
 
@@ -77,7 +80,7 @@ setfileoption("nc","defineMode",True)
 
 ;--Data file containing source grid
     ;src_file = "/home/users/dmbertra/WBGT/elevation_crop.nc"
-    src_file = "/data/sco/wbgt_python/elevation_sercc.nc"    ;file we created in Step 1
+    src_file = "/data/sco/wbgt_python/resources/elevation_sercc.nc"    ;file we created in Step 1
     sfile    = addfile(src_file,"r")
 	src_lat = sfile->lat
 	src_lon = sfile->lon
@@ -172,3 +175,5 @@ setfileoption("nc","defineMode",True)
 
 
 ;end
+
+
