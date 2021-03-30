@@ -77,7 +77,7 @@ pycparser==2.20
 pydocstyle==5.0.2
 pyflakes==2.1.1
 pygeocoder==1.2.5
-Pygments==2.5.2
+Pygments==2.7.4
 pylint==2.4.4
 pyparsing==2.4.6
 pyproj==2.4.2.post1
